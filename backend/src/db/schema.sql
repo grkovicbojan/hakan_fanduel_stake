@@ -10,9 +10,12 @@ CREATE TABLE IF NOT EXISTS website_infos (
   scrape_interval INTEGER NOT NULL DEFAULT 10,
   refresh_interval INTEGER NOT NULL DEFAULT 300,
   comparison_website_list TEXT NOT NULL DEFAULT '',
+  scrape_type SMALLINT NOT NULL DEFAULT 0,
+  api_keys TEXT NOT NULL DEFAULT '',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  PRIMARY KEY (url)
+  PRIMARY KEY (url),
+  CONSTRAINT website_infos_scrape_type_check CHECK (scrape_type IN (0, 1))
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_website_infos_id ON website_infos (id);
@@ -122,8 +125,20 @@ END $$;
 
 SELECT create_hypertable('alert_infos', 'timestamp', if_not_exists => TRUE);
 
-CREATE TABLE IF NOT EXISTS app_settings (
-  key TEXT PRIMARY KEY,
-  value TEXT NOT NULL DEFAULT '',
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
+-- Legacy: global API keys lived here; keys are now per-row on website_infos (api_keys).
+DROP TABLE IF EXISTS app_settings;
+
+ALTER TABLE website_infos ADD COLUMN IF NOT EXISTS scrape_type SMALLINT NOT NULL DEFAULT 0;
+ALTER TABLE website_infos ADD COLUMN IF NOT EXISTS api_keys TEXT NOT NULL DEFAULT '';
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid = 'public.website_infos'::regclass
+      AND conname = 'website_infos_scrape_type_check'
+  ) THEN
+    ALTER TABLE website_infos
+      ADD CONSTRAINT website_infos_scrape_type_check CHECK (scrape_type IN (0, 1));
+  END IF;
+END $$;

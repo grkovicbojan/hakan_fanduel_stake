@@ -1,5 +1,4 @@
 import express from "express";
-import { getStakeOddsApiKey, setStakeOddsApiKey } from "../db/appSettingsRepo.js";
 import {
   createWebsite,
   deleteWebsite,
@@ -12,7 +11,6 @@ import {
   listAllMatchWebsiteInfosWithScrapeStats
 } from "../db/matchWebsiteRepo.js";
 import { getOddsByUrl } from "../db/oddRepo.js";
-import { env } from "../config/env.js";
 import { syncNbaStakeFixturesToMatchWebsiteInfos } from "../services/stakeNbaSyncService.js";
 
 export function createSettingRouter() {
@@ -66,37 +64,16 @@ export function createSettingRouter() {
     }
   });
 
-  router.get("/integrations", async (req, res, next) => {
-    try {
-      const key = await getStakeOddsApiKey();
-      res.json({ hasStakeOddsApiKey: Boolean(String(key || "").trim()) });
-    } catch (error) {
-      next(error);
-    }
-  });
-
-  router.put("/integrations", async (req, res, next) => {
-    try {
-      if (req.body && typeof req.body.stakeOddsApiKey === "string") {
-        await setStakeOddsApiKey(req.body.stakeOddsApiKey);
-      }
-      res.json({ ok: true });
-    } catch (error) {
-      next(error);
-    }
-  });
-
   router.post("/stake/sync-nba-fixtures", async (req, res, next) => {
     try {
-      const fromBody =
-        req.body && typeof req.body.apiKey === "string" ? String(req.body.apiKey).trim() : "";
-      const apiKey = fromBody || (await getStakeOddsApiKey()) || env.stakeOddsApiKey;
-      if (!apiKey) {
-        return res.status(400).json({
-          message: "Missing API key. Save it under Settings (Stake Odds Data) or pass apiKey in the JSON body."
-        });
-      }
-      const result = await syncNbaStakeFixturesToMatchWebsiteInfos(apiKey);
+      const body = req.body && typeof req.body === "object" ? req.body : {};
+      const websiteId = body.websiteId ?? body.website_id;
+      const apiKeyOverride =
+        typeof body.apiKey === "string" && body.apiKey.trim() ? body.apiKey.trim() : "";
+      const result = await syncNbaStakeFixturesToMatchWebsiteInfos({
+        websiteId,
+        apiKeyOverride: apiKeyOverride || undefined
+      });
       res.json(result);
     } catch (error) {
       next(error);

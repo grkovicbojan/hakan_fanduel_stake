@@ -20,6 +20,11 @@ export function createApiRouter({ queue }) {
         return res.status(400).json({ result: "invalid", message: "Missing required fields." });
       }
 
+      const website = await findWebsiteByUrl(url, ScrapeTypes.SCRAPE);
+      if (!website) {
+        return res.status(404).json({ result: "not_found", message: "Website not found." });
+      }
+
       const record = await upsertScrapedInfo({
         url,
         data,
@@ -40,8 +45,8 @@ export function createApiRouter({ queue }) {
         return res.json({ result: "ok" });
       }
 
-      const website = await findWebsiteByUrl(url);
-      const urls = (await getUniqueMatchUrlsForWebsite(url)).filter((u) => !isStakeHostUrl(u));
+      const urls = await getUniqueMatchUrlsForWebsite(url);
+      
       return res.json({
         result: "ok",
         intervals: {

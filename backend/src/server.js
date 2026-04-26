@@ -2,8 +2,8 @@ import cors from "cors";
 import express from "express";
 import { env } from "./config/env.js";
 import { pool } from "./db/pool.js";
+import { listApiWebsites } from "./db/websiteRepo.js";
 import { insertAlert } from "./db/alertsRepo.js";
-import { getPendingMatchIds, listDistinctStakeComparisonFixtureUrls } from "./db/matchRepo.js";
 import { logger } from "./lib/logger.js";
 import { TaskQueue, TaskTypes } from "./orchestrator/taskQueue.js";
 import { WorkerPool } from "./orchestrator/workerPool.js";
@@ -38,28 +38,6 @@ async function start() {
   await pool.query("SELECT 1");
   logger.info("Database connected.");
 
-  // queue.push({
-  //   type: TaskTypes.EXTRACT_MAIN_WEBSITE,
-  //   note: "https://sportsbook.fanduel.com/navigation/nba"
-  // });
-  // queue.push({
-  //   type: TaskTypes.EXTRACT_MAIN_WEBSITE,
-  //   note: "https://sports.tipico.de/de/alle/basketball/usa/nba"
-  // });
-  // queue.push({
-  //   type: TaskTypes.EXTRACT_MAIN_WEBSITE,
-  //   note: "https://stake.com/de/sports/basketball/usa/nba"
-  // });
-  // queue.push({
-  //   type: TaskTypes.EXTRACT_SUB_WEBSITE,
-  //   note: "https://sportsbook.fanduel.com/basketball/nba/phoenix-suns-@-oklahoma-city-thunder-35510136"
-  // });
-
-  // queue.push({
-  //   type: TaskTypes.EXTRACT_SUB_WEBSITE,
-  //   note: "https://stake.com/de/sports/basketball/usa/nba/46467340-oklahoma-city-thunder-w8"
-  // });
-
   await workerPool.start();
   logger.info(`Worker pool started with ${workerCount} workers.`);
   // Tasks queued before start() are picked up inside start() → runLoop().
@@ -74,23 +52,35 @@ async function start() {
           note: id
         });
       }
+
+      const apiWebsites = await listApiWebsites();
+      for (const website of apiWebsites) {
+        queue.push({
+          type: TaskTypes.EXTRACT_MAIN_WEBSITE,
+          note: website.url
+        });
+
+        const matchInfos = await getMatchWebsiteInfosByWebsite(website.url);
+        for (const match of matchInfos) {
+          queue.push({
+            type: TaskTypes.EXTRACT_SUB_WEBSITE,
+            note: match.url
+          });
+        }
+      }
+
+      const apiSbuWebsites = await listApiWebsites();
+      for (const website of apiWebsites) {
+        queue.push({
+          type: TaskTypes.EXTRACT_MAIN_WEBSITE,
+          note: website.url
+        });
+      }
       workerPool.runLoop();
     } catch (error) {
       await insertAlert({ type: "scheduler_error", message: error.message });
     }
   }, 1000);
-
-  setInterval(async () => {
-    try {
-      const stakeUrls = await listDistinctStakeComparisonFixtureUrls(400);
-      for (const u of stakeUrls) {
-        queue.push({ type: TaskTypes.EXTRACT_SUB_WEBSITE, note: u });
-      }
-      if (stakeUrls.length) workerPool.runLoop();
-    } catch (error) {
-      await insertAlert({ type: "stake_odds_poll_error", message: error.message });
-    }
-  }, env.stakeOddsPollIntervalMs);
 
   createWsServer(env.websocketPort);
 

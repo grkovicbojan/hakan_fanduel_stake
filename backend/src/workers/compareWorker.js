@@ -1,13 +1,13 @@
 import { parentPort } from "node:worker_threads";
-import { getStakeOddsApiKey } from "../db/appSettingsRepo.js";
 import { getScrapedByUrl } from "../db/scrapedRepo.js";
-import { env } from "../config/env.js";
 import { extractDetailFromWebsite, extractMatchFromWebsite } from "../extractors/index.js";
-import { oddRowsFromStakeOddsDataPayload } from "../extractors/stakeOddsDataMapper.js";
-import { isStakeHostUrl } from "../lib/stakeHosts.js";
-import { fetchStakeFixturePayload, stakeSlugFromPageUrl } from "../lib/stakeOddsDataClient.js";
 import { TaskTypes } from "../orchestrator/taskQueue.js";
-import { deleteStaleMatches, getMatchById, markMatchCompared, upsertMatchRecord } from "../db/matchRepo.js";
+import {
+  deleteStaleMatches,
+  getMatchById,
+  markMatchCompared,
+  upsertMatchRecord
+} from "../db/matchRepo.js";
 import { findWebsiteByUrl, listWebsites } from "../db/websiteRepo.js";
 import { getOddsByUrl, upsertOddInfos } from "../db/oddRepo.js";
 import { upsertComparedInfo } from "../db/comparisonRepo.js";
@@ -15,17 +15,62 @@ import { insertAlert } from "../db/alertsRepo.js";
 import { replaceMatchWebsiteInfos } from "../db/matchWebsiteRepo.js";
 import { logger, writeHtmlDump } from "../lib/logger.js";
 
-async function handleExtractMain(task) {
-  logger.info("handleExtractMain", { task });
+async function handleExtractMainScrape(task) {
+  logger.info("handleExtractMainScrape", { task });
   const websiteUrl = task.note;
+
   const scraped = await getScrapedByUrl(websiteUrl);
   if (!scraped) {
     logger.warn("EXTRACT_MAIN skipped: no scraped_infos HTML for this URL (extension must POST /api/scrape first).", {
       websiteUrl
     });
+    return [];
+  }
+  return extractMatchFromWebsite(scraped.result, websiteUrl);
+}
+
+async function handleExtractMainApi(task) {
+  logger.info("handleExtractMainApi", { task });
+  const websiteUrl = task.note;
+
+  if(!task.note) {
+    logger.warn("EXTRACT_MAIN_API skipped: no website URL provided.", { task });
     return;
   }
-  const extractedMatches = extractMatchFromWebsite(scraped.result, websiteUrl);
+
+  const matchInfos = await extractMatchFromAPI(websiteUrl);
+  
+  const record = await upsertScrapedInfo({
+    url: websiteUrl,
+    data: JSON.stringify(matchInfos),
+    timestamp: new Date(timestamp).toISOString()
+  });
+
+  if (!record) {
+    return res.json({ result: "invalid" });
+  }
+  
+}
+
+async function handleExtractMain(task) {
+  logger.info("handleExtractMain", { task });
+  const websiteUrl = task.note;
+  let extractedMatches = [];
+
+  const websiteScrape = await findWebsiteByUrl(websiteUrl, ScrapeTypes.SCRAPE);
+  if (websiteScrape) {
+    extractedMatches = await handleExtractMainScrape(task);
+  }
+
+  const websiteApi = await findWebsiteByUrl(websiteUrl, ScrapeTypes.API);
+  if (websiteApi) {
+    extractedMatches = await handleExtractMainApi(task);
+  }
+
+  if(!websiteScrape && !websiteApi) {
+    logger.warn("EXTRACT_MAIN skipped: no website_infos row for this fixture.", { websiteUrl });
+    return;
+  }
 
   if( extractedMatches.length == 0) {
     logger.warn("EXTRACT_MAIN skipped: no matches found for this URL.", {
@@ -33,19 +78,12 @@ async function handleExtractMain(task) {
     });
     return;
   }
-
-  if (extractedMatches.length < 4) {
-    logger.warn("EXTRACT_MAIN skipped: less than 4 matches found for this URL.", {
-      websiteUrl,
-      extractedMatches
-    });
-    return;
-  }
-
+  
   await replaceMatchWebsiteInfos(
     websiteUrl,
     extractedMatches.map((item) => ({ name: item.matchName, url: item.matchUrl }))
   );
+
   const validNames = extractedMatches.map((item) => item.matchName);
   await deleteStaleMatches(websiteUrl, validNames);
 
@@ -95,38 +133,56 @@ async function handleExtractMain(task) {
   }
 }
 
-async function handleExtractSub(task) {
+async function handleExtractSubScrape(task) {
   const websiteUrl = task.note;
-  if (isStakeHostUrl(websiteUrl)) {
-    const slug = stakeSlugFromPageUrl(websiteUrl);
-    if (!slug) {
-      logger.warn("EXTRACT_SUB stake: could not parse slug from URL.", { websiteUrl });
-      return;
-    }
-    const apiKey = (await getStakeOddsApiKey()) || env.stakeOddsApiKey;
-    try {
-      const payload = await fetchStakeFixturePayload(slug, apiKey);
-      const detailed = oddRowsFromStakeOddsDataPayload(payload, websiteUrl);
-      await upsertOddInfos(
-        detailed.map((item) => ({
-          url: item.url,
-          category: item.category,
-          value: Number(item.value)
-        }))
-      );
-    } catch (error) {
-      logger.error("EXTRACT_SUB stake odds-data failed", { websiteUrl, slug, error: error.message });
-      await insertAlert({ type: "stake_odds_data_error", message: error.message, url: websiteUrl });
-    }
-    return;
-  }
-
   const scraped = await getScrapedByUrl(websiteUrl);
   if (!scraped) {
     logger.warn("EXTRACT_SUB skipped: no scraped payload for this URL.", { websiteUrl });
     return;
   }
   const detailed = extractDetailFromWebsite(scraped.result, websiteUrl);
+  return detailed;
+}
+
+async function handleExtractSubApi(task) {
+  const websiteUrl = task.note;
+  const detailed = await extractDetailFromAPI(websiteUrl);
+  const record = await upsertScrapedInfo({
+    url: websiteUrl,
+    data: JSON.stringify(detailed),
+    timestamp: new Date(timestamp).toISOString()
+  });
+
+  if (!record) {
+    return res.json({ result: "invalid" });
+  }
+  return detailed;
+}
+
+async function handleExtractSub(task) {
+  const websiteUrl = task.note;
+  let detailed = [];
+
+  const websiteScrape = await findWebsiteByUrl(websiteUrl, ScrapeTypes.SCRAPE);
+  if (websiteScrape) {
+    detailed = await handleExtractSubScrape(task);
+  }
+
+  const websiteApi = await findWebsiteByUrl(websiteUrl, ScrapeTypes.API);
+  if (websiteApi) {
+    detailed = await handleExtractSubApi(task);
+  }
+
+  if(!websiteScrape && !websiteApi) {
+    logger.warn("EXTRACT_MAIN skipped: no website_infos row for this fixture.", { websiteUrl });
+    return;
+  }  
+
+  if(detailed.length == 0) {
+    logger.warn("EXTRACT_SUB skipped: no details found for this URL.", { websiteUrl });
+    return;
+  }
+
   await upsertOddInfos(
     detailed.map((item) => ({
       url: item.url,

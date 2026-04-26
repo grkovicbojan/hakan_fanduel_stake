@@ -111,3 +111,18 @@ export async function listDistinctStakeComparisonFixtureUrls(limit = 500) {
   );
   return rows.map((r) => r.url).filter(Boolean);
 }
+
+/** Stake site root URL (match_infos.comparison_url) for a comparison fixture page URL, if known. */
+export async function getComparisonRootUrlForComparisonFixture(fixturePageUrl) {
+  const { rows } = await query(
+    `SELECT comparison_url
+     FROM match_infos
+     WHERE comparison_match_url <> ''
+       AND comparison_url <> ''
+       AND (comparison_match_url = $1 OR rtrim(comparison_match_url, '/') = rtrim($1, '/'))
+     LIMIT 1`,
+    [fixturePageUrl]
+  );
+  const v = rows[0]?.comparison_url;
+  return v ? String(v).trim() : null;
+}

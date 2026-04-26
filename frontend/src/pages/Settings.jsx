@@ -6,7 +6,9 @@ const initialForm = {
   type: "B",
   scrapeInterval: 10,
   refreshInterval: 300,
-  comparisonWebsiteList: ""
+  comparisonWebsiteList: "",
+  scrapeType: 0,
+  apiKeys: ""
 };
 
 function rowToEditForm(row) {
@@ -15,8 +17,22 @@ function rowToEditForm(row) {
     type: row.type,
     scrapeInterval: row.scrape_interval,
     refreshInterval: row.refresh_interval,
-    comparisonWebsiteList: row.comparison_website_list ?? ""
+    comparisonWebsiteList: row.comparison_website_list ?? "",
+    scrapeType: Number(row.scrape_type) === 1 ? 1 : 0,
+    apiKeys: row.api_keys ?? ""
   };
+}
+
+function apiKeysConfiguredCount(text) {
+  if (!text || typeof text !== "string") return 0;
+  return text
+    .split(/[\n,]+/)
+    .map((s) => s.trim())
+    .filter(Boolean).length;
+}
+
+function isStakeSiteRow(row) {
+  return /stake\.(com|de)/i.test(row?.url || "");
 }
 
 function secondsSince(iso) {
@@ -48,8 +64,8 @@ function subScrapeStatusOk(lastScrapedAt, scrapeIntervalSeconds) {
 
 export default function Settings() {
   const [rows, setRows] = useState([]);
-  const [integrations, setIntegrations] = useState({ hasStakeOddsApiKey: false });
-  const [stakeOddsApiKeyDraft, setStakeOddsApiKeyDraft] = useState("");
+  const [stakeSyncWebsiteId, setStakeSyncWebsiteId] = useState("");
+  const [stakeSyncApiKeyOverride, setStakeSyncApiKeyOverride] = useState("");
   const [stakeSyncBusy, setStakeSyncBusy] = useState(false);
   const [form, setForm] = useState(initialForm);
   const [edit, setEdit] = useState(null);
@@ -62,15 +78,6 @@ export default function Settings() {
   const pollingInFlightRef = useRef(false);
 
   const refreshSettings = useCallback(() => api.getSettings().then(setRows).catch(() => {}), []);
-
-  const refreshIntegrations = useCallback(
-    () =>
-      api
-        .getIntegrations()
-        .then(setIntegrations)
-        .catch(() => setIntegrations({ hasStakeOddsApiKey: false })),
-    []
-  );
 
   const refreshMatchOverview = useCallback((silent = false) => {
     if (!silent) setMatchOverviewLoading(true);
@@ -85,9 +92,9 @@ export default function Settings() {
 
   const reloadAll = useCallback(
     async (silent = false) => {
-      await Promise.all([refreshSettings(), refreshMatchOverview(silent), refreshIntegrations()]);
+      await Promise.all([refreshSettings(), refreshMatchOverview(silent)]);
     },
-    [refreshIntegrations, refreshMatchOverview, refreshSettings]
+    [refreshMatchOverview, refreshSettings]
   );
 
   useEffect(() => {
@@ -154,17 +161,16 @@ export default function Settings() {
     setEditForm(rowToEditForm(row));
   };
 
-  const saveStakeOddsApiKey = async () => {
-    await api.putIntegrations({ stakeOddsApiKey: stakeOddsApiKeyDraft });
-    setStakeOddsApiKeyDraft("");
-    await refreshIntegrations();
-  };
-
   const syncStakeNbaFixtures = async () => {
     setStakeSyncBusy(true);
     try {
-      const key = stakeOddsApiKeyDraft.trim();
-      await api.postStakeSyncNbaFixtures(key || undefined);
+      const wid = stakeSyncWebsiteId.trim();
+      const key = stakeSyncApiKeyOverride.trim();
+      await api.postStakeSyncNbaFixtures({
+        ...(wid ? { websiteId: wid } : {}),
+        ...(key ? { apiKey: key } : {})
+      });
+      setStakeSyncApiKeyOverride("");
       await refreshMatchOverview(true);
     } finally {
       setStakeSyncBusy(false);
@@ -178,7 +184,9 @@ export default function Settings() {
       type: editForm.type,
       scrapeInterval: editForm.scrapeInterval,
       refreshInterval: editForm.refreshInterval,
-      comparisonWebsiteList: editForm.comparisonWebsiteList
+      comparisonWebsiteList: editForm.comparisonWebsiteList,
+      scrapeType: editForm.scrapeType,
+      apiKeys: editForm.apiKeys
     });
     setEdit(null);
     setEditForm(null);
@@ -189,32 +197,39 @@ export default function Settings() {
     <section>
       <h2>Stake Odds Data API</h2>
       <p className="muted small">
-        Backend pulls NBA fixtures and per-game odds from{" "}
+        Per website below: set <strong>Scrape type</strong> to API for Stake rows that should use{" "}
         <a href="https://odds-data.stake.com/" target="_blank" rel="noreferrer">
           odds-data.stake.com
         </a>{" "}
-        (see{" "}
-        <a href="https://docs-odds-data.stake.com/" target="_blank" rel="noreferrer">
+        (<a href="https://docs-odds-data.stake.com/" target="_blank" rel="noreferrer">
           docs
         </a>
-        ). Save your API key here; it is stored in the database. Then sync NBA fixtures into{" "}
-        <code>match_website_infos</code> for your Stake website row.
-      </p>
-      <p className="muted small">
-        API key on file:{" "}
-        <strong>{integrations?.hasStakeOddsApiKey ? "yes" : "no"}</strong>
+        ). Enter one or more API keys (comma or newline separated) in <strong>API keys</strong> to spread rate
+        limits. Optional env fallback: <code>STAKE_ODDS_API_KEY</code>.
       </p>
       <div className="form-grid">
+        <label className="row">
+          <span className="muted small">Sync NBA fixtures into match list for</span>
+          <select
+            value={stakeSyncWebsiteId}
+            onChange={(e) => setStakeSyncWebsiteId(e.target.value)}
+            aria-label="Stake website for NBA sync"
+          >
+            <option value="">Auto (first Stake row with API scrape type, else first Stake)</option>
+            {rows.filter(isStakeSiteRow).map((r) => (
+              <option key={r.id} value={String(r.id)}>
+                {r.url} (scrape_type={r.scrape_type}, keys={apiKeysConfiguredCount(r.api_keys)})
+              </option>
+            ))}
+          </select>
+        </label>
         <input
           type="password"
           autoComplete="off"
-          placeholder="Stake Odds Data API key"
-          value={stakeOddsApiKeyDraft}
-          onChange={(e) => setStakeOddsApiKeyDraft(e.target.value)}
+          placeholder="One-shot API key override (optional)"
+          value={stakeSyncApiKeyOverride}
+          onChange={(e) => setStakeSyncApiKeyOverride(e.target.value)}
         />
-        <button type="button" onClick={saveStakeOddsApiKey}>
-          Save API key
-        </button>
         <button type="button" disabled={stakeSyncBusy} onClick={syncStakeNbaFixtures}>
           {stakeSyncBusy ? "Syncing…" : "Sync NBA fixtures"}
         </button>
@@ -246,6 +261,20 @@ export default function Settings() {
           value={form.comparisonWebsiteList}
           onChange={(e) => setForm({ ...form, comparisonWebsiteList: e.target.value })}
         />
+        <select
+          value={form.scrapeType}
+          onChange={(e) => setForm({ ...form, scrapeType: Number(e.target.value) })}
+          aria-label="Scrape type"
+        >
+          <option value={0}>Scrape (0)</option>
+          <option value={1}>API (1)</option>
+        </select>
+        <textarea
+          placeholder="API keys (comma or newline); empty if scrape"
+          rows={2}
+          value={form.apiKeys}
+          onChange={(e) => setForm({ ...form, apiKeys: e.target.value })}
+        />
         <button type="button" onClick={create}>
           Add
         </button>
@@ -260,6 +289,8 @@ export default function Settings() {
             <th>ScrapeInterval</th>
             <th>RefreshInterval</th>
             <th>Comparison List</th>
+            <th>Scrape type</th>
+            <th>API keys</th>
             <th>Action</th>
           </tr>
         </thead>
@@ -275,6 +306,12 @@ export default function Settings() {
                 <td>{row.scrape_interval}</td>
                 <td>{row.refresh_interval}</td>
                 <td>{row.comparison_website_list}</td>
+                <td>{row.scrape_type}</td>
+                <td>
+                  {apiKeysConfiguredCount(row.api_keys) > 0
+                    ? `${apiKeysConfiguredCount(row.api_keys)} key(s)`
+                    : "—"}
+                </td>
                 <td>
                   <button type="button" onClick={() => openEdit(row)}>
                     Edit
@@ -395,6 +432,26 @@ export default function Settings() {
                   onChange={(e) =>
                     setEditForm({ ...editForm, comparisonWebsiteList: e.target.value })
                   }
+                />
+              </label>
+              <label>
+                Scrape type (0 = scrape, 1 = API)
+                <select
+                  value={editForm.scrapeType}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, scrapeType: Number(e.target.value) })
+                  }
+                >
+                  <option value={0}>Scrape (0)</option>
+                  <option value={1}>API (1)</option>
+                </select>
+              </label>
+              <label>
+                API keys (comma or newline; multiple for rate limits)
+                <textarea
+                  rows={4}
+                  value={editForm.apiKeys}
+                  onChange={(e) => setEditForm({ ...editForm, apiKeys: e.target.value })}
                 />
               </label>
             </div>
