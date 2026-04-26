@@ -20,7 +20,17 @@ const IGNORE_PATH = /navigation|account|login|register|promo|help|static|assets|
 const MATCH_PATH_HINT =
     /\/(event|events|game|games|fixture|fixtures|contest|competition|match|sb\/|sport\/|sports\/|league\/|nba\/|ncaab\/|wnba\/)/i;
 
+function siteHostname(siteUrl) {
+    try {
+        return new URL(siteUrl).hostname;
+    } catch {
+        return "";
+    }
+}
 
+function isFanduelSportsbook(siteUrl) {
+    return siteHostname(siteUrl) === "sportsbook.fanduel.com";
+}
 
 function resolveHref(siteUrl, href) {
     if (!href || href.startsWith("javascript:") || href === "#") return null;
@@ -75,7 +85,7 @@ function dedupeByCanonicalMatchUrl(rows) {
         const nm = normalizeFinalMatchName(r.matchName);
         const prev = map.get(canon);
         if (!prev) {
-            map.set(canon, { matchUrl: canon, matchName: nm || prev?.matchName || "" });
+            map.set(canon, { matchUrl: canon, matchName: nm || "" });
         }
     }
     return [...map.values()];
@@ -220,7 +230,7 @@ function normalizeFinalMatchName(matchName) {
 }
 
 
-function extractFanduelSportbookDetails(html, websiteUrl) {
+export function extractFanduelSportbookDetails(html, websiteUrl) {
     const out = [];
     const seen = new Set();
     const labelRe = /aria-label="([^",]+),\s*([^",]+),\s*([+-]\d+)(?:\s*Odds)?"/gi;

@@ -18,24 +18,33 @@ export async function listApiWebsites() {
           OR rtrim(w.url, '/') LIKE rtrim(si.url, '/') || '/%'
      ) ls ON true
      WHERE w.scrape_type = $1
-       AND (ls.last_scraped_at IS NULL OR ls.last_scraped_at < NOW() - INTERVAL '10 seconds')
+       AND (ls.last_scraped_at IS NULL OR ls.last_scraped_at < NOW() - INTERVAL '1000 seconds')
      ORDER BY w.id DESC`,
     [ScrapeTypes.API]
   );
   return rows;
 }
 
+/** API keys string for the longest-prefix website_infos row with scrape_type = API. */
 export async function getApiKeysFromWebsite(url) {
+  const site = await findWebsiteByUrlAny(url);
+  if (!site || Number(site.scrape_type) !== ScrapeTypes.API) return "";
+  return String(site.api_keys ?? "");
+}
+
+/** Longest-prefix match ignoring scrape_type (baseline wiring / Stake resolution). */
+export async function findWebsiteByUrlAny(url) {
+  if (!url || typeof url !== "string") return null;
   const { rows } = await query(
-    `SELECT api_keys
+    `SELECT *
      FROM website_infos
      WHERE url = $1
-       AND scrape_type = $2
-     ORDER BY id DESC
+        OR $1 LIKE rtrim(url, '/') || '/%'
+     ORDER BY length(url) DESC
      LIMIT 1`,
-    [url, ScrapeTypes.API]
+    [url]
   );
-  return rows[0]?.api_keys;
+  return rows[0] || null;
 }
 
 export async function listWebsites() {
@@ -187,9 +196,8 @@ export async function findWebsiteByUrl(url, scrapeType = ScrapeTypes.SCRAPE) {
   const { rows } = await query(
     `SELECT *
      FROM website_infos
-     WHERE url = $1
+     WHERE (url = $1 OR $1 LIKE rtrim(url, '/') || '/%')
        AND scrape_type = $2
-        OR $1 LIKE rtrim(url, '/') || '/%'
      ORDER BY length(url) DESC
      LIMIT 1`,
     [url, scrapeType]

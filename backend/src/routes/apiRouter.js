@@ -1,7 +1,7 @@
 import express from "express";
 import { TaskTypes } from "../orchestrator/taskQueue.js";
 import { upsertScrapedInfo } from "../db/scrapedRepo.js";
-import { findWebsiteByUrl } from "../db/websiteRepo.js";
+import { findWebsiteByUrl, findWebsiteByUrlAny, ScrapeTypes } from "../db/websiteRepo.js";
 import { getUniqueMatchUrlsForWebsite } from "../db/matchRepo.js";
 import { isStakeHostUrl } from "../lib/stakeHosts.js";
 
@@ -45,8 +45,18 @@ export function createApiRouter({ queue }) {
         return res.json({ result: "ok" });
       }
 
-      const urls = await getUniqueMatchUrlsForWebsite(url);
-      
+      const rawUrls = await getUniqueMatchUrlsForWebsite(url);
+      const urls = [];
+      for (const u of rawUrls) {
+        if (!isStakeHostUrl(u)) {
+          urls.push(u);
+          continue;
+        }
+        const stakeSite = await findWebsiteByUrlAny(u);
+        if (stakeSite && Number(stakeSite.scrape_type) === ScrapeTypes.API) continue;
+        urls.push(u);
+      }
+
       return res.json({
         result: "ok",
         intervals: {

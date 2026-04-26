@@ -11,7 +11,6 @@ import {
   listAllMatchWebsiteInfosWithScrapeStats
 } from "../db/matchWebsiteRepo.js";
 import { getOddsByUrl } from "../db/oddRepo.js";
-import { syncNbaStakeFixturesToMatchWebsiteInfos } from "../services/stakeNbaSyncService.js";
 
 export function createSettingRouter() {
   const router = express.Router();
@@ -59,22 +58,6 @@ export function createSettingRouter() {
       }
       const rows = await getOddsByUrl(url);
       res.json(rows);
-    } catch (error) {
-      next(error);
-    }
-  });
-
-  router.post("/stake/sync-nba-fixtures", async (req, res, next) => {
-    try {
-      const body = req.body && typeof req.body === "object" ? req.body : {};
-      const websiteId = body.websiteId ?? body.website_id;
-      const apiKeyOverride =
-        typeof body.apiKey === "string" && body.apiKey.trim() ? body.apiKey.trim() : "";
-      const result = await syncNbaStakeFixturesToMatchWebsiteInfos({
-        websiteId,
-        apiKeyOverride: apiKeyOverride || undefined
-      });
-      res.json(result);
     } catch (error) {
       next(error);
     }

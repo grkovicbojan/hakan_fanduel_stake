@@ -1,6 +1,11 @@
 import { parentPort } from "node:worker_threads";
-import { getScrapedByUrl } from "../db/scrapedRepo.js";
-import { extractDetailFromWebsite, extractMatchFromWebsite } from "../extractors/index.js";
+import { getScrapedByUrl, upsertScrapedInfo } from "../db/scrapedRepo.js";
+import {
+  extractDetailFromAPI,
+  extractDetailFromWebsite,
+  extractMatchFromAPI,
+  extractMatchFromWebsite
+} from "../extractors/index.js";
 import { TaskTypes } from "../orchestrator/taskQueue.js";
 import {
   deleteStaleMatches,
@@ -8,12 +13,12 @@ import {
   markMatchCompared,
   upsertMatchRecord
 } from "../db/matchRepo.js";
-import { findWebsiteByUrl, listWebsites } from "../db/websiteRepo.js";
+import { findWebsiteByUrl, findWebsiteByUrlAny, listWebsites, ScrapeTypes } from "../db/websiteRepo.js";
 import { getOddsByUrl, upsertOddInfos } from "../db/oddRepo.js";
 import { upsertComparedInfo } from "../db/comparisonRepo.js";
 import { insertAlert } from "../db/alertsRepo.js";
 import { replaceMatchWebsiteInfos } from "../db/matchWebsiteRepo.js";
-import { logger, writeHtmlDump } from "../lib/logger.js";
+import { logger } from "../lib/logger.js";
 
 async function handleExtractMainScrape(task) {
   logger.info("handleExtractMainScrape", { task });
@@ -32,24 +37,19 @@ async function handleExtractMainScrape(task) {
 async function handleExtractMainApi(task) {
   logger.info("handleExtractMainApi", { task });
   const websiteUrl = task.note;
-
-  if(!task.note) {
+  if (!websiteUrl) {
     logger.warn("EXTRACT_MAIN_API skipped: no website URL provided.", { task });
-    return;
+    return [];
   }
-
   const matchInfos = await extractMatchFromAPI(websiteUrl);
-  
-  const record = await upsertScrapedInfo({
+  console.log("matchInfos", matchInfos);
+  const list = Array.isArray(matchInfos) ? matchInfos : [];
+  await upsertScrapedInfo({
     url: websiteUrl,
-    data: JSON.stringify(matchInfos),
-    timestamp: new Date(timestamp).toISOString()
+    data: JSON.stringify(list),
+    timestamp: new Date().toISOString()
   });
-
-  if (!record) {
-    return res.json({ result: "invalid" });
-  }
-  
+  return list;
 }
 
 async function handleExtractMain(task) {
@@ -58,27 +58,26 @@ async function handleExtractMain(task) {
   let extractedMatches = [];
 
   const websiteScrape = await findWebsiteByUrl(websiteUrl, ScrapeTypes.SCRAPE);
+  const websiteApi = await findWebsiteByUrl(websiteUrl, ScrapeTypes.API);
+
   if (websiteScrape) {
     extractedMatches = await handleExtractMainScrape(task);
-  }
-
-  const websiteApi = await findWebsiteByUrl(websiteUrl, ScrapeTypes.API);
-  if (websiteApi) {
+  } else if (websiteApi) {
     extractedMatches = await handleExtractMainApi(task);
   }
 
-  if(!websiteScrape && !websiteApi) {
-    logger.warn("EXTRACT_MAIN skipped: no website_infos row for this fixture.", { websiteUrl });
+  if (!websiteScrape && !websiteApi) {
+    logger.warn("EXTRACT_MAIN skipped: no website_infos row for this URL.", { websiteUrl });
     return;
   }
 
-  if( extractedMatches.length == 0) {
+  if (extractedMatches.length === 0) {
     logger.warn("EXTRACT_MAIN skipped: no matches found for this URL.", {
       websiteUrl
     });
     return;
   }
-  
+
   await replaceMatchWebsiteInfos(
     websiteUrl,
     extractedMatches.map((item) => ({ name: item.matchName, url: item.matchUrl }))
@@ -88,7 +87,7 @@ async function handleExtractMain(task) {
   await deleteStaleMatches(websiteUrl, validNames);
 
   const websites = await listWebsites();
-  const matchedSite = await findWebsiteByUrl(websiteUrl);
+  const matchedSite = await findWebsiteByUrlAny(websiteUrl);
   const asBaseline = matchedSite?.type === "B" ? matchedSite : null;
   const baselineComparisons = asBaseline?.comparison_website_list
     ? asBaseline.comparison_website_list.split(",").map((item) => item.trim()).filter(Boolean)
@@ -138,25 +137,22 @@ async function handleExtractSubScrape(task) {
   const scraped = await getScrapedByUrl(websiteUrl);
   if (!scraped) {
     logger.warn("EXTRACT_SUB skipped: no scraped payload for this URL.", { websiteUrl });
-    return;
+    return [];
   }
   const detailed = extractDetailFromWebsite(scraped.result, websiteUrl);
-  return detailed;
+  return Array.isArray(detailed) ? detailed : [];
 }
 
 async function handleExtractSubApi(task) {
   const websiteUrl = task.note;
   const detailed = await extractDetailFromAPI(websiteUrl);
-  const record = await upsertScrapedInfo({
+  const list = Array.isArray(detailed) ? detailed : [];
+  await upsertScrapedInfo({
     url: websiteUrl,
-    data: JSON.stringify(detailed),
-    timestamp: new Date(timestamp).toISOString()
+    data: JSON.stringify(list),
+    timestamp: new Date().toISOString()
   });
-
-  if (!record) {
-    return res.json({ result: "invalid" });
-  }
-  return detailed;
+  return list;
 }
 
 async function handleExtractSub(task) {
@@ -164,21 +160,20 @@ async function handleExtractSub(task) {
   let detailed = [];
 
   const websiteScrape = await findWebsiteByUrl(websiteUrl, ScrapeTypes.SCRAPE);
+  const websiteApi = await findWebsiteByUrl(websiteUrl, ScrapeTypes.API);
+
   if (websiteScrape) {
     detailed = await handleExtractSubScrape(task);
-  }
-
-  const websiteApi = await findWebsiteByUrl(websiteUrl, ScrapeTypes.API);
-  if (websiteApi) {
+  } else if (websiteApi) {
     detailed = await handleExtractSubApi(task);
   }
 
-  if(!websiteScrape && !websiteApi) {
-    logger.warn("EXTRACT_MAIN skipped: no website_infos row for this fixture.", { websiteUrl });
+  if (!websiteScrape && !websiteApi) {
+    logger.warn("EXTRACT_SUB skipped: no website_infos row for this URL.", { websiteUrl });
     return;
-  }  
+  }
 
-  if(detailed.length == 0) {
+  if (detailed.length === 0) {
     logger.warn("EXTRACT_SUB skipped: no details found for this URL.", { websiteUrl });
     return;
   }

@@ -45,7 +45,6 @@ export class WorkerPool {
   runLoop() {
     while (this.idleWorkers.length > 0) {
       const task = this.queue.pop();
-      console.log("task", task);
       if (!task) {
         break;
       }

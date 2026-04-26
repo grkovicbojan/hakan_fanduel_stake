@@ -63,12 +63,6 @@ export const api = {
     }),
   getAlerts: ({ page = 1, pageSize = 50 } = {}) =>
     fetch(`${url("/alert")}?page=${page}&pageSize=${pageSize}`).then(parseJson),
-  postStakeSyncNbaFixtures: (payload = {}) =>
-    fetch(url("/setting/stake/sync-nba-fixtures"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(typeof payload === "string" ? { apiKey: payload } : payload)
-    }).then(parseJson),
   /** When not using Vite proxy, call backend directly (e.g. quick scripts). */
   absoluteBaseUrl: () => absoluteBase()
 };

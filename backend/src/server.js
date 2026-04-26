@@ -2,6 +2,8 @@ import cors from "cors";
 import express from "express";
 import { env } from "./config/env.js";
 import { pool } from "./db/pool.js";
+import { getPendingMatchIds } from "./db/matchRepo.js";
+import { getMatchWebsiteInfosByWebsite } from "./db/matchWebsiteRepo.js";
 import { listApiWebsites } from "./db/websiteRepo.js";
 import { insertAlert } from "./db/alertsRepo.js";
 import { logger } from "./lib/logger.js";
@@ -68,14 +70,7 @@ async function start() {
           });
         }
       }
-
-      const apiSbuWebsites = await listApiWebsites();
-      for (const website of apiWebsites) {
-        queue.push({
-          type: TaskTypes.EXTRACT_MAIN_WEBSITE,
-          note: website.url
-        });
-      }
+      
       workerPool.runLoop();
     } catch (error) {
       await insertAlert({ type: "scheduler_error", message: error.message });
