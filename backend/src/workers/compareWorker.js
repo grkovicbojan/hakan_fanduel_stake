@@ -134,6 +134,7 @@ async function handleExtractMain(task) {
 
 async function handleExtractSubScrape(task) {
   const websiteUrl = task.note;
+  logger.info("handleExtractSubScrape", { task });
   const scraped = await getScrapedByUrl(websiteUrl);
   if (!scraped) {
     logger.warn("EXTRACT_SUB skipped: no scraped payload for this URL.", { websiteUrl });
@@ -145,8 +146,24 @@ async function handleExtractSubScrape(task) {
 
 async function handleExtractSubApi(task) {
   const websiteUrl = task.note;
+  logger.info("handleExtractSubApi", { task });
   const detailed = await extractDetailFromAPI(websiteUrl);
   const list = Array.isArray(detailed) ? detailed : [];
+
+  logger.info("handleExtractSubApi result", list.length);
+
+  const seen = new Set();
+
+  const duplicates = list.filter(item => {
+    if (seen.has(item.category)) {
+      return true; // this is a duplicate
+    }
+    seen.add(item.category);
+    return false;
+  });
+
+  console.log("duplicates", duplicates);
+
   await upsertScrapedInfo({
     url: websiteUrl,
     data: JSON.stringify(list),
@@ -156,6 +173,7 @@ async function handleExtractSubApi(task) {
 }
 
 async function handleExtractSub(task) {
+  logger.info("handleExtractSub", { task });
   const websiteUrl = task.note;
   let detailed = [];
 

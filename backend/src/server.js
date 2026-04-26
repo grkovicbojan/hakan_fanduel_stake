@@ -54,9 +54,19 @@ async function start() {
           note: id
         });
       }
+      
+      workerPool.runLoop();
+    } catch (error) {
+      await insertAlert({ type: "scheduler_error", message: error.message });
+    }
+  }, 1000);
 
+  setInterval(async () => {
+    try {
       const apiWebsites = await listApiWebsites();
       for (const website of apiWebsites) {
+
+        console.log("time", Date.now()- website.last_scraped_at);
         queue.push({
           type: TaskTypes.EXTRACT_MAIN_WEBSITE,
           note: website.url
@@ -75,7 +85,7 @@ async function start() {
     } catch (error) {
       await insertAlert({ type: "scheduler_error", message: error.message });
     }
-  }, 1000);
+  }, 10000);
 
   createWsServer(env.websocketPort);
 

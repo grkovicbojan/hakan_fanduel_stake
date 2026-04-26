@@ -41,7 +41,7 @@ export async function extractStakeSportbookMatches(websiteUrl) {
       return [];
     }
     return data.fixtures.map((item) => ({
-      matchName: item.name.replace(/\s+/g, '').toLowerCase(),
+      matchName: normalizeFinalMatchName(item.name),
       matchUrl: nbaFixtureUrlFromSlug(item.slug)
     }));
   } catch {
@@ -266,3 +266,22 @@ function normalizeDetailToken(s) {
     return out;
   }
   
+  function normalizeFinalMatchName(matchName) {
+    if (!matchName || typeof matchName !== "string") return "";
+    let s = matchName.trim();
+    // 1) remove leading/trailing numeric tokens around the matchup label
+    s = s.replace(/^\d+\s+/, "").replace(/\s+\d+$/, "");
+    // 2) remove spaces
+    s = s.replace(/\s+/g, "");
+    // 3) unify separator to "-"
+    s = s.replace(/@/g, "-");
+
+    const idx = s.indexOf("-");
+    if (idx < 0) return s.toLowerCase();
+
+    // 4) left/right around separator are team names; 5) sort and rebuild
+    const teamA = s.slice(0, idx).toLowerCase();
+    const teamB = s.slice(idx + 1).toLowerCase();
+    if (!teamA || !teamB) return s.toLowerCase();
+    return [teamA, teamB].sort((a, b) => a.localeCompare(b)).join("-");
+}
