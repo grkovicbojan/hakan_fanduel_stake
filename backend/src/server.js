@@ -3,7 +3,7 @@ import express from "express";
 import { env } from "./config/env.js";
 import { pool } from "./db/pool.js";
 import { insertAlert } from "./db/alertsRepo.js";
-import { getPendingMatchIds } from "./db/matchRepo.js";
+import { getPendingMatchIds, listDistinctStakeComparisonFixtureUrls } from "./db/matchRepo.js";
 import { logger } from "./lib/logger.js";
 import { TaskQueue, TaskTypes } from "./orchestrator/taskQueue.js";
 import { WorkerPool } from "./orchestrator/workerPool.js";
@@ -79,6 +79,18 @@ async function start() {
       await insertAlert({ type: "scheduler_error", message: error.message });
     }
   }, 1000);
+
+  setInterval(async () => {
+    try {
+      const stakeUrls = await listDistinctStakeComparisonFixtureUrls(400);
+      for (const u of stakeUrls) {
+        queue.push({ type: TaskTypes.EXTRACT_SUB_WEBSITE, note: u });
+      }
+      if (stakeUrls.length) workerPool.runLoop();
+    } catch (error) {
+      await insertAlert({ type: "stake_odds_poll_error", message: error.message });
+    }
+  }, env.stakeOddsPollIntervalMs);
 
   createWsServer(env.websocketPort);
 

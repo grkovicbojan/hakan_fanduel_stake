@@ -1,5 +1,3 @@
-import { oddRowsFromStakeGraphqlEnvelope } from "./stakeGraphqlMapper.js";
-
 /**
  * @typedef {{ matchName: string, matchUrl: string }} ExtractedMatch
  */
@@ -355,14 +353,7 @@ export function extractMatchFromWebsite(html, websiteUrl) {
 export function extractDetailFromWebsite(html, websiteUrl) {
   if (!html || typeof html !== "string") return [];
   if (isStakeSite(websiteUrl)) {
-    const trimmed = html.trim();
-    if (!trimmed.startsWith("{")) return [];
-    try {
-      const envelope = JSON.parse(trimmed);
-      return oddRowsFromStakeGraphqlEnvelope(envelope, websiteUrl);
-    } catch {
-      return [];
-    }
+    return [];
   }
   if (isFanduelSportsbook(websiteUrl)) {
     return extractFanduelSportbookDetails(html, websiteUrl);

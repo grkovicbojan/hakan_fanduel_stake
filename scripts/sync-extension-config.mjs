@@ -7,7 +7,6 @@ dotenv.config({ path: path.resolve(rootDir, ".env") });
 
 const serverIp = process.env.SERVER_IP || "127.0.0.1";
 const backendPort = Number.parseInt(process.env.BACKEND_PORT || "4000", 10);
-const stakeAccessToken = JSON.stringify(process.env.STAKE_ACCESS_TOKEN || "");
 
 const content = `export const EXT_CONFIG = {
   serverIp: "${serverIp}",
@@ -15,9 +14,6 @@ const content = `export const EXT_CONFIG = {
 };
 
 export const API_BASE = \`http://\${EXT_CONFIG.serverIp}:\${EXT_CONFIG.backendPort}\`;
-
-/** Optional: Stake.com Settings → Security → API Tokens (sent as x-access-token on GraphQL). */
-export const STAKE_ACCESS_TOKEN = ${stakeAccessToken};
 `;
 
 await fs.writeFile(path.resolve(rootDir, "extension/config.js"), content, "utf8");

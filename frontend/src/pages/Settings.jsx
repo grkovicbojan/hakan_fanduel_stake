@@ -48,6 +48,9 @@ function subScrapeStatusOk(lastScrapedAt, scrapeIntervalSeconds) {
 
 export default function Settings() {
   const [rows, setRows] = useState([]);
+  const [integrations, setIntegrations] = useState({ hasStakeOddsApiKey: false });
+  const [stakeOddsApiKeyDraft, setStakeOddsApiKeyDraft] = useState("");
+  const [stakeSyncBusy, setStakeSyncBusy] = useState(false);
   const [form, setForm] = useState(initialForm);
   const [edit, setEdit] = useState(null);
   const [editForm, setEditForm] = useState(null);
@@ -59,6 +62,15 @@ export default function Settings() {
   const pollingInFlightRef = useRef(false);
 
   const refreshSettings = useCallback(() => api.getSettings().then(setRows).catch(() => {}), []);
+
+  const refreshIntegrations = useCallback(
+    () =>
+      api
+        .getIntegrations()
+        .then(setIntegrations)
+        .catch(() => setIntegrations({ hasStakeOddsApiKey: false })),
+    []
+  );
 
   const refreshMatchOverview = useCallback((silent = false) => {
     if (!silent) setMatchOverviewLoading(true);
@@ -73,9 +85,9 @@ export default function Settings() {
 
   const reloadAll = useCallback(
     async (silent = false) => {
-      await Promise.all([refreshSettings(), refreshMatchOverview(silent)]);
+      await Promise.all([refreshSettings(), refreshMatchOverview(silent), refreshIntegrations()]);
     },
-    [refreshMatchOverview, refreshSettings]
+    [refreshIntegrations, refreshMatchOverview, refreshSettings]
   );
 
   useEffect(() => {
@@ -142,6 +154,23 @@ export default function Settings() {
     setEditForm(rowToEditForm(row));
   };
 
+  const saveStakeOddsApiKey = async () => {
+    await api.putIntegrations({ stakeOddsApiKey: stakeOddsApiKeyDraft });
+    setStakeOddsApiKeyDraft("");
+    await refreshIntegrations();
+  };
+
+  const syncStakeNbaFixtures = async () => {
+    setStakeSyncBusy(true);
+    try {
+      const key = stakeOddsApiKeyDraft.trim();
+      await api.postStakeSyncNbaFixtures(key || undefined);
+      await refreshMatchOverview(true);
+    } finally {
+      setStakeSyncBusy(false);
+    }
+  };
+
   const saveEdit = async () => {
     if (!edit || !editForm) return;
     await api.updateSetting(edit, {
@@ -158,6 +187,39 @@ export default function Settings() {
 
   return (
     <section>
+      <h2>Stake Odds Data API</h2>
+      <p className="muted small">
+        Backend pulls NBA fixtures and per-game odds from{" "}
+        <a href="https://odds-data.stake.com/" target="_blank" rel="noreferrer">
+          odds-data.stake.com
+        </a>{" "}
+        (see{" "}
+        <a href="https://docs-odds-data.stake.com/" target="_blank" rel="noreferrer">
+          docs
+        </a>
+        ). Save your API key here; it is stored in the database. Then sync NBA fixtures into{" "}
+        <code>match_website_infos</code> for your Stake website row.
+      </p>
+      <p className="muted small">
+        API key on file:{" "}
+        <strong>{integrations?.hasStakeOddsApiKey ? "yes" : "no"}</strong>
+      </p>
+      <div className="form-grid">
+        <input
+          type="password"
+          autoComplete="off"
+          placeholder="Stake Odds Data API key"
+          value={stakeOddsApiKeyDraft}
+          onChange={(e) => setStakeOddsApiKeyDraft(e.target.value)}
+        />
+        <button type="button" onClick={saveStakeOddsApiKey}>
+          Save API key
+        </button>
+        <button type="button" disabled={stakeSyncBusy} onClick={syncStakeNbaFixtures}>
+          {stakeSyncBusy ? "Syncing…" : "Sync NBA fixtures"}
+        </button>
+      </div>
+
       <h2>Website Infos</h2>
       <div className="form-grid">
         <input
@@ -229,7 +291,8 @@ export default function Settings() {
 
       <h2>Match Info Based on Website</h2>
       <p className="muted small">
-        All sub-URLs from match_website_infos, grouped by main website. Status uses last extension scrape vs{" "}
+        All sub-URLs from match_website_infos, grouped by main website. Status uses last odds update (extension scrape
+        or Stake API) vs{" "}
         <code>1.5 × scrapeInterval</code> for that main site.
       </p>
       {matchOverviewLoading ? (

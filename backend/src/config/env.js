@@ -34,6 +34,8 @@ export const env = {
   logDir: process.env.LOG_DIR?.trim()
     ? path.resolve(process.env.LOG_DIR)
     : path.resolve(__dirname, "../../logs"),
-  /** Optional: used if server-side Stake GraphQL is added later; extension reads this via sync:extension-config. */
-  stakeAccessToken: process.env.STAKE_ACCESS_TOKEN?.trim() || ""
+  /** Fallback if DB app_settings.stake_odds_api_key is empty (Stake Odds Data API). */
+  stakeOddsApiKey: process.env.STAKE_ODDS_API_KEY?.trim() || "",
+  /** How often to queue EXTRACT_SUB for Stake comparison_match_url rows (ms). */
+  stakeOddsPollIntervalMs: toInt(process.env.STAKE_ODDS_POLL_INTERVAL_MS, 60_000)
 };

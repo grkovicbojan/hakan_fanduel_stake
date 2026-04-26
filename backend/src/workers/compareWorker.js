@@ -1,6 +1,11 @@
 import { parentPort } from "node:worker_threads";
+import { getStakeOddsApiKey } from "../db/appSettingsRepo.js";
 import { getScrapedByUrl } from "../db/scrapedRepo.js";
+import { env } from "../config/env.js";
 import { extractDetailFromWebsite, extractMatchFromWebsite } from "../extractors/index.js";
+import { oddRowsFromStakeOddsDataPayload } from "../extractors/stakeOddsDataMapper.js";
+import { isStakeHostUrl } from "../lib/stakeHosts.js";
+import { fetchStakeFixturePayload, stakeSlugFromPageUrl } from "../lib/stakeOddsDataClient.js";
 import { TaskTypes } from "../orchestrator/taskQueue.js";
 import { deleteStaleMatches, getMatchById, markMatchCompared, upsertMatchRecord } from "../db/matchRepo.js";
 import { findWebsiteByUrl, listWebsites } from "../db/websiteRepo.js";
@@ -92,6 +97,30 @@ async function handleExtractMain(task) {
 
 async function handleExtractSub(task) {
   const websiteUrl = task.note;
+  if (isStakeHostUrl(websiteUrl)) {
+    const slug = stakeSlugFromPageUrl(websiteUrl);
+    if (!slug) {
+      logger.warn("EXTRACT_SUB stake: could not parse slug from URL.", { websiteUrl });
+      return;
+    }
+    const apiKey = (await getStakeOddsApiKey()) || env.stakeOddsApiKey;
+    try {
+      const payload = await fetchStakeFixturePayload(slug, apiKey);
+      const detailed = oddRowsFromStakeOddsDataPayload(payload, websiteUrl);
+      await upsertOddInfos(
+        detailed.map((item) => ({
+          url: item.url,
+          category: item.category,
+          value: Number(item.value)
+        }))
+      );
+    } catch (error) {
+      logger.error("EXTRACT_SUB stake odds-data failed", { websiteUrl, slug, error: error.message });
+      await insertAlert({ type: "stake_odds_data_error", message: error.message, url: websiteUrl });
+    }
+    return;
+  }
+
   const scraped = await getScrapedByUrl(websiteUrl);
   if (!scraped) {
     logger.warn("EXTRACT_SUB skipped: no scraped payload for this URL.", { websiteUrl });

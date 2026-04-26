@@ -4,6 +4,3 @@ export const EXT_CONFIG = {
 };
 
 export const API_BASE = `http://${EXT_CONFIG.serverIp}:${EXT_CONFIG.backendPort}`;
-
-/** Optional: Stake.com Settings → Security → API Tokens (sent as x-access-token on GraphQL). */
-export const STAKE_ACCESS_TOKEN = "";

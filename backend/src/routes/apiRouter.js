@@ -3,6 +3,7 @@ import { TaskTypes } from "../orchestrator/taskQueue.js";
 import { upsertScrapedInfo } from "../db/scrapedRepo.js";
 import { findWebsiteByUrl } from "../db/websiteRepo.js";
 import { getUniqueMatchUrlsForWebsite } from "../db/matchRepo.js";
+import { isStakeHostUrl } from "../lib/stakeHosts.js";
 
 export function createApiRouter({ queue }) {
   const router = express.Router();
@@ -40,7 +41,7 @@ export function createApiRouter({ queue }) {
       }
 
       const website = await findWebsiteByUrl(url);
-      const urls = await getUniqueMatchUrlsForWebsite(url);
+      const urls = (await getUniqueMatchUrlsForWebsite(url)).filter((u) => !isStakeHostUrl(u));
       return res.json({
         result: "ok",
         intervals: {

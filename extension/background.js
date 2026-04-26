@@ -1,4 +1,4 @@
-import { API_BASE, STAKE_ACCESS_TOKEN } from "./config.js";
+import { API_BASE } from "./config.js";
 
 const SCHEDULER_ALARM = "schedulerTick";
 const TICK_MS = 1000;
@@ -270,16 +270,6 @@ function normalizeUrl(url) {
     return href;
   } catch {
     return String(url).trim();
-  }
-}
-
-/** Stake fixture / sports pages: odds come from GraphQL in the tab, not scraped HTML. */
-function isStakeHostUrl(url) {
-  try {
-    const h = new URL(String(url).trim()).hostname.toLowerCase();
-    return h === "stake.com" || h.endsWith(".stake.com");
-  } catch {
-    return false;
   }
 }
 
@@ -1025,22 +1015,6 @@ async function openTarget(task) {
   await waitForTabComplete(tabId, SUB_TAB_LOAD_MAX_MS).catch(() => {});
 
   const now = Date.now();
-  if (isStakeHostUrl(sub)) {
-    console.log("[SportBet TL] openTarget: Stake host — skip DOM target polls, use GraphQL scrape");
-    await addTask({
-      type: TASK_TYPES.ScrapeSubWebsite,
-      url: sub,
-      chromeTabId: tabId,
-      timestamp: now
-    });
-    await addTask({
-      type: TASK_TYPES.RefreshSubWebsite,
-      url: sub,
-      chromeTabId: tabId,
-      timestamp: now + refreshIntervalMs()
-    });
-    return;
-  }
 
   let hit = 0;
   for (let attempt = 0; attempt < OPEN_TARGET_TARGET_POLLS; attempt++) {
@@ -1129,17 +1103,15 @@ async function scrapeSubWebsite(task) {
     return;
   }
 
-  if (!isStakeHostUrl(sub)) {
-    const hit = await countTargetsInTab(tabId);
-    if (hit <= 0) {
-      await addTask({
-        type: TASK_TYPES.RefreshSubWebsite,
-        url: sub,
-        chromeTabId: tabId,
-        timestamp: Date.now() + RETRY_REFRESH_SUB_MS
-      });
-      return;
-    }
+  const hit = await countTargetsInTab(tabId);
+  if (hit <= 0) {
+    await addTask({
+      type: TASK_TYPES.RefreshSubWebsite,
+      url: sub,
+      chromeTabId: tabId,
+      timestamp: Date.now() + RETRY_REFRESH_SUB_MS
+    });
+    return;
   }
 
   await addTask({
@@ -1150,53 +1122,10 @@ async function scrapeSubWebsite(task) {
   });
 
   await healthcheck().catch(() => {});
-
-  const stakeTok = typeof STAKE_ACCESS_TOKEN === "string" ? STAKE_ACCESS_TOKEN : "";
-  /** @type {string} */
-  let payloadForServer;
-  /** @type {number} */
-  let targetHitCount;
-  /** @type {number} */
-  let durationMs;
-
-  if (isStakeHostUrl(sub)) {
-    const tGraph = Date.now();
-    await ensureContentScriptInjected(tabId);
-    /** @type {{ ok?: boolean, jsonText?: string, error?: string } | undefined} */
-    let graphRes;
-    for (let attempt = 0; attempt < 8; attempt++) {
-      try {
-        graphRes = await chrome.tabs.sendMessage(tabId, {
-          type: "FETCH_STAKE_GRAPHQL_ODDS",
-          accessToken: stakeTok
-        });
-        if (graphRes?.ok && graphRes.jsonText) break;
-      } catch {
-        /* retry */
-      }
-      await ensureContentScriptInjected(tabId);
-      await sleep(400 * (attempt + 1));
-    }
-    durationMs = Date.now() - tGraph;
-    targetHitCount = graphRes?.ok ? 1 : 0;
-    payloadForServer =
-      graphRes?.jsonText ||
-      JSON.stringify({
-        stakeGraphqlV1: true,
-        fixtureUrl: sub,
-        event: null,
-        error: graphRes?.error || "graphql_message_failed"
-      });
-  } else {
-    const extracted = await extractHtmlFromTab(tabId, false, {
-      skipTargetClicks: false,
-      tabLoadTimeoutMs: SUB_TAB_LOAD_MAX_MS
-    });
-    payloadForServer = extracted.html;
-    targetHitCount = extracted.targetHitCount;
-    durationMs = extracted.durationMs;
-  }
-
+  const { html, targetHitCount, durationMs } = await extractHtmlFromTab(tabId, false, {
+    skipTargetClicks: false,
+    tabLoadTimeoutMs: SUB_TAB_LOAD_MAX_MS
+  });
   const row = state.subUrlStatus.get(sub);
   if (row) {
     row.targetOpened = targetHitCount > 0;
@@ -1206,7 +1135,7 @@ async function scrapeSubWebsite(task) {
     row.anchorScrapeMs = Date.now();
     row.lastScrapedAt = new Date().toISOString();
   }
-  await postScrape("S", sub, payloadForServer);
+  await postScrape("S", sub, html);
 }
 
 /** @param {Task} task */

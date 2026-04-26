@@ -98,3 +98,16 @@ export async function getUniqueMatchUrlsForWebsite(url) {
   );
   return rows.map((row) => row.match_url);
 }
+
+/** Distinct Stake fixture page URLs used as comparison sides (backend Odds Data API polling). */
+export async function listDistinctStakeComparisonFixtureUrls(limit = 500) {
+  const { rows } = await query(
+    `SELECT DISTINCT comparison_match_url AS url
+     FROM match_infos
+     WHERE comparison_match_url <> ''
+       AND (comparison_match_url ILIKE '%stake.com%' OR comparison_match_url ILIKE '%stake.de%')
+     LIMIT $1`,
+    [limit]
+  );
+  return rows.map((r) => r.url).filter(Boolean);
+}

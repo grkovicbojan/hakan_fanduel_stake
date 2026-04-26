@@ -121,3 +121,9 @@ END $$;
 -- No UNIQUE(id) alone here: Timescale hypertables require unique indexes to include "timestamp".
 
 SELECT create_hypertable('alert_infos', 'timestamp', if_not_exists => TRUE);
+
+CREATE TABLE IF NOT EXISTS app_settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL DEFAULT '',
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
