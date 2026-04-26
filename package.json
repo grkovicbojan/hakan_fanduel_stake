@@ -1,0 +1,19 @@
+{
+  "name": "hakan-mentor-basketball-webscrapping",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "dev:backend": "npm --workspace backend run dev",
+    "dev:frontend": "npm --workspace frontend run dev",
+    "start:backend": "npm --workspace backend run start",
+    "build:frontend": "npm --workspace frontend run build",
+    "sync:extension-config": "node scripts/sync-extension-config.mjs"
+  },
+  "devDependencies": {
+    "dotenv": "^16.6.1"
+  }
+}

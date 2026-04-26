@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>SportBet Extension</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        min-width: 520px;
+        max-width: 720px;
+        padding: 12px;
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+        margin-top: 8px;
+      }
+      input {
+        width: 100%;
+        padding: 8px;
+        box-sizing: border-box;
+      }
+      button {
+        padding: 8px 10px;
+      }
+      .status {
+        margin-top: 8px;
+        font-weight: bold;
+      }
+      .hint {
+        margin-top: 6px;
+        font-size: 12px;
+        color: #555;
+      }
+      .detail-label {
+        margin-top: 10px;
+        font-size: 12px;
+        font-weight: bold;
+        color: #333;
+      }
+      .table-wrap {
+        margin-top: 4px;
+        overflow-x: auto;
+        max-height: 260px;
+        overflow-y: auto;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+      table.sub-urls {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 11px;
+      }
+      table.sub-urls th,
+      table.sub-urls td {
+        border: 1px solid #ddd;
+        padding: 6px 8px;
+        text-align: left;
+        vertical-align: top;
+      }
+      table.sub-urls th {
+        background: #eee;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+      }
+      table.sub-urls tr.stale-row td {
+        background: #fff8e6;
+      }
+      table.sub-urls td.num {
+        white-space: nowrap;
+        text-align: right;
+      }
+      table.task-history {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 10px;
+      }
+      table.task-history th,
+      table.task-history td {
+        border: 1px solid #ddd;
+        padding: 4px 6px;
+        text-align: left;
+        vertical-align: top;
+        word-break: break-word;
+      }
+      table.task-history th {
+        background: #eee;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+      }
+      table.task-history td.mono {
+        font-family: Consolas, monospace;
+        white-space: nowrap;
+      }
+      table.task-history td.ok {
+        color: #0a6b2a;
+      }
+      table.task-history td.err {
+        color: #a30f0f;
+      }
+      .table-wrap.task-history-wrap {
+        max-height: 180px;
+      }
+      pre#schedulerDetail {
+        margin: 4px 0 0;
+        padding: 8px;
+        font-size: 11px;
+        line-height: 1.35;
+        white-space: pre-wrap;
+        word-break: break-word;
+        max-height: 160px;
+        overflow: auto;
+        background: #f4f4f4;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <h3>Main Website</h3>
+    <input id="mainUrl" placeholder="https://sportsbook.fanduel.com" />
+    <div class="row">
+      <button id="startBtn">Start</button>
+      <button id="stopBtn">Stop</button>
+    </div>
+    <div class="status" id="connectionStatus">Connection: 🔴</div>
+    <div class="status" id="monitoringStatus">Monitoring: —</div>
+    <div class="hint" id="trackingHint"></div>
+
+    <div class="detail-label">Sub-URLs (from server)</div>
+    <div class="table-wrap">
+      <table class="sub-urls">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Target opened</th>
+            <th>Scraped</th>
+            <th>Refreshed</th>
+            <th>Loading time</th>
+          </tr>
+        </thead>
+        <tbody id="subUrlTableBody"></tbody>
+      </table>
+    </div>
+    <div class="hint" id="subUrlTableHint"></div>
+
+    <div class="detail-label">Tasks added (last 10)</div>
+    <div class="table-wrap task-history-wrap">
+      <table class="task-history">
+        <thead>
+          <tr>
+            <th>When</th>
+            <th>Type</th>
+            <th>URL</th>
+            <th>Tab</th>
+            <th>Due</th>
+            <th>Seq</th>
+          </tr>
+        </thead>
+        <tbody id="taskAddedBody"></tbody>
+      </table>
+    </div>
+
+    <div class="detail-label">Tasks accomplished (last 10)</div>
+    <div class="table-wrap task-history-wrap">
+      <table class="task-history">
+        <thead>
+          <tr>
+            <th>When</th>
+            <th>Type</th>
+            <th>URL</th>
+            <th>Tab</th>
+            <th>Due</th>
+            <th>Seq</th>
+            <th>Result</th>
+          </tr>
+        </thead>
+        <tbody id="taskDoneBody"></tbody>
+      </table>
+    </div>
+
+    <div class="detail-label">Scheduler</div>
+    <pre id="schedulerDetail"></pre>
+    <script type="module" src="./popup.js"></script>
+  </body>
+</html>
