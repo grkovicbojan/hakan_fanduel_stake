@@ -638,12 +638,12 @@ async function reloadTabAndWait(tabId, timeoutMs) {
  * existing tabs often lose the listener until the page is refreshed.
  *
  * @param {number} tabId
- * @param {boolean} _legacy
+ * @param {boolean} isMain
  * @param {{ skipTargetClicks?: boolean, tabLoadTimeoutMs?: number }} [opts]
  * @returns {Promise<{ html: string, targetHitCount: number, durationMs: number }>}
  */
-async function extractHtmlFromTab(tabId, _legacy = false, opts = {}) {
-  void _legacy;
+async function extractHtmlFromTab(tabId, isMain = false, opts = {}) {
+  void isMain;
   const loadTimeout = opts.tabLoadTimeoutMs ?? MAIN_TAB_LOAD_MAX_MS;
   const t0 = performance.now();
   await waitForTabComplete(tabId, loadTimeout).catch(() => {});
@@ -651,6 +651,7 @@ async function extractHtmlFromTab(tabId, _legacy = false, opts = {}) {
   await ensureContentScriptInjected(tabId);
   const message = {
     type: "GET_PAGE_HTML",
+    isMain: isMain,
     skipTargetClicks: opts.skipTargetClicks === true
   };
   let lastError;
@@ -860,7 +861,7 @@ async function scrapeMainWebsite(task) {
 
   await waitForTabComplete(tabId, MAIN_TAB_LOAD_MAX_MS).catch(() => {});
   await healthcheck().catch(() => {});
-  const { html } = await extractHtmlFromTab(tabId, false, {
+  const { html } = await extractHtmlFromTab(tabId, true, {
     skipTargetClicks: true,
     tabLoadTimeoutMs: MAIN_TAB_LOAD_MAX_MS
   });

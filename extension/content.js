@@ -11,6 +11,7 @@
   const FAN_DUEL_HOST = "sportsbook.fanduel.com";
   const FAN_DUEL_EXPANDABLE_SELECTOR = "main ul li [aria-expanded]";
   const FAN_DUEL_EXPANDABLE_SELECTOR_2ND = "main ul li [aria-expanded='false']";
+  const FAN_DUEL_SHOW_SELECTOR = "div [aria-label='Show more']";
   const CLICK_TAG_TIME_MS = 2000;
 
   function isFanDuelPage() {
@@ -36,7 +37,11 @@
         for (const element of nodesToOpen) {
           element.click();
         }
-        if (nodesToOpen.length > 0) {
+        const showToOpen = document.querySelectorAll(FAN_DUEL_SHOW_SELECTOR);
+        for (const element of showToOpen) {
+          element.click();
+        }
+        if (nodesToOpen.length > 0 || showToOpen.length > 0) {
           await sleep(CLICK_TAG_TIME_MS);
         }
       }
@@ -61,9 +66,18 @@
 
     (async () => {
       const skipTargetClicks = message.skipTargetClicks === true;
-      const targetHitCount = await runTargetInteraction(skipTargetClicks);
+      const targetHitCount = await runTargetInteraction(skipTargetClicks);      
+      let data;
+
+      if( isFanDuelPage() ) {
+        const tag = document.querySelector('ul.af.s.h.i.j.ah.ai.m.aj.o.ak.q.al');
+        data = tag.innerHTML;
+      } else {
+        data = document.documentElement.outerHTML;
+      }
+
       sendResponse({
-        html: document.documentElement.outerHTML,
+        html: data,
         targetHitCount
       });
     })().catch(() => {

@@ -233,28 +233,20 @@ function normalizeFinalMatchName(matchName) {
 export function extractFanduelSportbookDetails(html, websiteUrl) {
     const out = [];
     const seen = new Set();
-    const labelRe = /aria-label="([^",]+),\s*([^",]+),\s*([+-]\d+)(?:\s*Odds)?"/gi;
-    let m;
-
-    while ((m = labelRe.exec(html))) {
-        const marketType = normalizeDetailToken(m[1]);
-        const playerName = normalizeDetailToken(m[2]);
-        const value = Number.parseInt(m[3], 10);
-        if (!marketType || !playerName || Number.isNaN(value)) continue;
-        if (!looksLikePlayerName(playerName)) continue;
-
-        const category = `${marketType}:${playerName}`;
-        const key = `${category}|${value}`;
-        if (seen.has(key)) continue;
-        seen.add(key);
-        out.push({ url: websiteUrl, category, value });
-    }
-
-    // Locale-safe fallback: parse raw aria-label attributes and normalize DE/EN market text.
     const ariaLabelAttrRe = /aria-label="([^"]+)"/gi;
+    let m;
+    let currentMarketContext = "";
     while ((m = ariaLabelAttrRe.exec(html))) {
-        const parsed = parseFanduelAriaLabel(m[1]);
-        if (!parsed) continue;
+        const raw = decodeHtmlEntities(String(m[1] || "")).trim();
+        if (!raw) continue;
+
+        const parsed = parseFanduelAriaLabel(raw, currentMarketContext);
+        if (parsed?.kind === "market_header") {
+            currentMarketContext = parsed.market;
+            continue;
+        }
+        if (!parsed || parsed.kind !== "selection") continue;
+
         const key = `${parsed.category}|${parsed.value}`;
         if (seen.has(key)) continue;
         seen.add(key);
@@ -268,51 +260,68 @@ export function extractFanduelSportbookDetails(html, websiteUrl) {
     return out;
 }
 
-function parseFanduelAriaLabel(rawLabel) {
-    const decoded = decodeHtmlEntities(String(rawLabel || "")).trim();
-    if (!decoded) return null;
+function parseFanduelAriaLabel(rawLabel, currentMarketContext) {
+    const label = String(rawLabel || "").trim();
+    if (!label) return null;
 
-    const parts = decoded
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
-    if (parts.length < 3) return null;
+    // Group headers like "Player Points", used as context for rows such as:
+    // "Victor Wembanyama, Over 26.5, +100 Odds"
+    if (!/odds|over|under|,| - /i.test(label)) {
+        const market = marketPrefixFromLabel(label);
+        if (!market) return null;
+        return { kind: "market_header", market };
+    }
 
-    const oddToken = parts[parts.length - 1];
-    const oddMatch = oddToken.match(/([+-]\d+|\d+(?:[.,]\d+)?)(?:\s*(?:odds|quote|quoten))?$/i);
-    if (!oddMatch) return null;
-    const value = Number.parseFloat(oddMatch[1].replace(",", "."));
-    if (Number.isNaN(value)) return null;
+    // Form 1: "Victor Wembanyama, Over 26.5, +100 Odds"
+    const overUnderRow = label.match(
+        /^([^,]+),\s*(Over|Under)\s*([0-9]+(?:[.,][0-9]+)?),\s*([+-]?\d+)(?:\s*Odds)?$/i
+    );
+    if (overUnderRow) {
+        const playerRaw = overUnderRow[1];
+        const line = Number.parseFloat(overUnderRow[3].replace(",", "."));
+        const value = Number.parseInt(overUnderRow[4], 10);
+        const player = normalizeDetailToken(playerRaw);
+        const marketPrefix = marketPrefixFromLabel(currentMarketContext);
+        if (!marketPrefix || !looksLikePlayerName(player) || Number.isNaN(line) || Number.isNaN(value)) {
+            return null;
+        }
+        return {
+            kind: "selection",
+            category: `${marketPrefix}${formatLineNumber(line)}+Points:${player}`,
+            value
+        };
+    }
 
-    const playerName = normalizeDetailToken(parts[parts.length - 2]);
-    if (!looksLikePlayerName(playerName)) return null;
+    // Form 2: "Stephon Castle - Alt Points, 10.5 Over, -750 Odds"
+    const dashRow = label.match(
+        /^(.+?)\s*-\s*([^,]+),\s*([0-9]+(?:[.,][0-9]+)?)\s*(Over|Under),\s*([+-]?\d+)(?:\s*Odds)?$/i
+    );
+    if (dashRow) {
+        const playerRaw = dashRow[1];
+        const marketRaw = dashRow[2];
+        const line = Number.parseFloat(dashRow[3].replace(",", "."));
+        const value = Number.parseInt(dashRow[5], 10);
+        const player = normalizeDetailToken(playerRaw);
+        const marketPrefix = marketPrefixFromLabel(marketRaw);
+        if (!marketPrefix || !looksLikePlayerName(player) || Number.isNaN(line) || Number.isNaN(value)) {
+            return null;
+        }
+        return {
+            kind: "selection",
+            category: `${marketPrefix}${formatLineNumber(line)}+Points:${player}`,
+            value
+        };
+    }
 
-    const marketRaw = parts.slice(0, -2).join(", ");
-    const marketType = normalizeFanduelMarketToken(marketRaw);
-    if (!marketType) return null;
-
-    return { category: `${marketType}:${playerName}`, value };
+    return null;
 }
 
-
-function normalizeFanduelMarketToken(raw) {
+function marketPrefixFromLabel(raw) {
     const text = decodeHtmlEntities(String(raw || ""))
         .trim()
         .replace(/\s+/g, " ");
     if (!text) return "";
-
-    // Canonicalize common localized "To Score X+ Points" variants to one stable key.
-    const toScoreMatch = text.match(
-        /(to\s*score|punkte?\s*erzielen|erzielt?\s*punkte?)\s*(\d+(?:[.,]\d+)?)\+\s*(points?|punkte?)?/i
-    );
-    if (toScoreMatch) {
-        const line = Number.parseFloat(toScoreMatch[2].replace(",", "."));
-        if (!Number.isNaN(line)) {
-            return `ToScore${formatLineNumber(line)}+Points`;
-        }
-    }
-
-    return normalizeDetailToken(text);
+    return normalizeDetailToken(text.replace(/[^\w\s+.-]/g, ""));
 }
 
 
