@@ -1,8 +1,18 @@
+/**
+ * Browser-side API client. It does not import `vite.config.js` (that file only runs in Node when you start Vite).
+ *
+ * Two modes:
+ * 1) `VITE_API_ORIGIN` set at build time → requests go to that origin (production / split API host).
+ * 2) Otherwise → relative URLs (`/setting`, `/dashboard`, …). In **dev/preview**, Vite proxies to the backend
+ *    (`SERVER_IP`: local uses `BACKEND_PORT`; a full `https://api.example.com` URL uses default 443, no `:port`).
+ *    In **production**, nginx (or similar) should proxy those paths to your backend domain, or set `VITE_API_ORIGIN`.
+ *
+ * `__BACKEND_PORT__` comes from Vite `define` in `vite.config.js` and is only used by `absoluteBaseUrl()` helpers.
+ */
 const backendPort = Number.parseInt(__BACKEND_PORT__, 10);
 
 /**
- * Same-origin paths in dev / preview (Vite proxies to the backend).
- * Optional build-time `VITE_API_ORIGIN` (e.g. https://api.example.com) for split deployments.
+ * Optional absolute API origin. If empty, use same-origin paths (works with Vite proxy or nginx proxy).
  */
 function baseUrl() {
   const origin =
