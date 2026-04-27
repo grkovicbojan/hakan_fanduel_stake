@@ -9,7 +9,6 @@ export function createApiRouter({ queue }) {
   const router = express.Router();
 
   router.post("/health", async (req, res) => {
-    console.log("health check", req.body);
     res.json({ data: "ok" });
   });
 

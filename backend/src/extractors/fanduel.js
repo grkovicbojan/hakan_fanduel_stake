@@ -284,95 +284,137 @@ function normalizeFinalMatchName(matchName) {
 export function extractFanduelSportbookDetails(html, websiteUrl) {
     const out = [];
     const seen = new Set();
-    const ariaLabelAttrRe = /aria-label="([^"]+)"/gi;
-    let m;
-    let currentMarketContext = "";
-    while ((m = ariaLabelAttrRe.exec(html))) {
-        const raw = decodeHtmlEntities(String(m[1] || "")).trim();
-        if (!raw) continue;
-
-        const parsed = parseFanduelAriaLabel(raw, currentMarketContext);
-        if (parsed?.kind === "market_header") {
-            currentMarketContext = parsed.market;
-            continue;
+    const processLabels = (labels) => {
+        let mainCategory = "";
+        for (const label of labels) {
+            if (!label.includes(",")) {
+                if (isUsefulMainCategoryLabel(label)) {
+                    mainCategory = normalizeMainCategory(label);
+                }
+                continue;
+            }
+            const parsed = parseSelectionLabel(label, mainCategory);
+            if (!parsed) continue;
+            const key = `${parsed.category}|${parsed.value}`;
+            if (seen.has(key)) continue;
+            seen.add(key);
+            out.push({
+                url: websiteUrl,
+                category: parsed.category,
+                value: parsed.value
+            });
         }
-        if (!parsed || parsed.kind !== "selection") continue;
+    };
 
-        const key = `${parsed.category}|${parsed.value}`;
-        if (seen.has(key)) continue;
-        seen.add(key);
-        out.push({
-            url: websiteUrl,
-            category: parsed.category,
-            value: parsed.value
-        });
+    const liRe = /<li\b[^>]*>([\s\S]*?)<\/li>/gi;
+    let liMatch;
+    let liCount = 0;
+    while ((liMatch = liRe.exec(html))) {
+        liCount += 1;
+        const block = liMatch[1];
+        const labels = extractAriaLabels(block);
+        if (!labels.length) continue;
+        processLabels(labels);
     }
 
+    // Some payloads contain only a fragment (divs) without wrapping <li>.
+    if (liCount === 0) {
+        const labels = extractAriaLabels(html);
+        processLabels(labels);
+    }
     return out;
 }
 
-function parseFanduelAriaLabel(rawLabel, currentMarketContext) {
-    const label = String(rawLabel || "").trim();
-    if (!label) return null;
-
-    // Group headers like "Player Points", used as context for rows such as:
-    // "Victor Wembanyama, Over 26.5, +100 Odds"
-    if (!/odds|over|under|,| - /i.test(label)) {
-        const market = marketPrefixFromLabel(label);
-        if (!market) return null;
-        return { kind: "market_header", market };
+function extractAriaLabels(blockHtml) {
+    const out = [];
+    const attrRe = /aria-label="([^"]+)"/gi;
+    let m;
+    while ((m = attrRe.exec(blockHtml))) {
+        const label = decodeHtmlEntities(String(m[1] || "")).trim();
+        if (!label) continue;
+        out.push(label);
     }
-
-    // Form 1: "Victor Wembanyama, Over 26.5, +100 Odds"
-    const overUnderRow = label.match(
-        /^([^,]+),\s*(Over|Under)\s*([0-9]+(?:[.,][0-9]+)?),\s*([+-]?\d+)(?:\s*Odds)?$/i
-    );
-    if (overUnderRow) {
-        const playerRaw = overUnderRow[1];
-        const line = Number.parseFloat(overUnderRow[3].replace(",", "."));
-        const value = Number.parseInt(overUnderRow[4], 10);
-        const player = normalizeDetailToken(playerRaw);
-        const marketPrefix = marketPrefixFromLabel(currentMarketContext);
-        if (!marketPrefix || !looksLikePlayerName(player) || Number.isNaN(line) || Number.isNaN(value)) {
-            return null;
-        }
-        return {
-            kind: "selection",
-            category: `${marketPrefix}${formatLineNumber(line)}+Points:${player}`,
-            value
-        };
-    }
-
-    // Form 2: "Stephon Castle - Alt Points, 10.5 Over, -750 Odds"
-    const dashRow = label.match(
-        /^(.+?)\s*-\s*([^,]+),\s*([0-9]+(?:[.,][0-9]+)?)\s*(Over|Under),\s*([+-]?\d+)(?:\s*Odds)?$/i
-    );
-    if (dashRow) {
-        const playerRaw = dashRow[1];
-        const marketRaw = dashRow[2];
-        const line = Number.parseFloat(dashRow[3].replace(",", "."));
-        const value = Number.parseInt(dashRow[5], 10);
-        const player = normalizeDetailToken(playerRaw);
-        const marketPrefix = marketPrefixFromLabel(marketRaw);
-        if (!marketPrefix || !looksLikePlayerName(player) || Number.isNaN(line) || Number.isNaN(value)) {
-            return null;
-        }
-        return {
-            kind: "selection",
-            category: `${marketPrefix}${formatLineNumber(line)}+Points:${player}`,
-            value
-        };
-    }
-
-    return null;
+    return out;
 }
 
-function marketPrefixFromLabel(raw) {
+function isUsefulMainCategoryLabel(label) {
+    if (!label || typeof label !== "string") return false;
+    const t = label.toLowerCase();
+    if (t.includes("same game parlay available")) return false;
+    return /points?|reb|rebounds?|ast|assists?|quarter|to score|player|alt|\+/.test(t);
+}
+
+function normalizeMainCategory(raw) {
     const text = decodeHtmlEntities(String(raw || ""))
         .trim()
         .replace(/\s+/g, " ");
     if (!text) return "";
-    return normalizeDetailToken(text.replace(/[^\w\s+.-]/g, ""));
+    const expanded = text
+        .replace(/\bAst\b/gi, "Assists")
+        .replace(/\bReb\b/gi, "Rebounds")
+        .replace(/\bPts\b/gi, "Points")
+        .replace(/\bAssist\b/gi, "Assists")
+        .replace(/\bAlt\b/gi, "")
+        .replace(/\s+/g, " ")
+        .trim();
+    return normalizeDetailToken(expanded.replace(/[^\w\s+.-]/g, ""));
+}
+
+function parseValueToken(token) {
+    const m = String(token || "").match(/([+-]?\d+(?:[.,]\d+)?)(?:\s*Odds)?$/i);
+    if (!m) return null;
+    const n = Number.parseFloat(String(m[1]).replace(",", "."));
+    return Number.isFinite(n) ? n : null;
+}
+
+function parsePointsToken(token) {
+    const m = String(token || "").match(/(\d+(?:[.,]\d+)?)(?:\s*\+)?\s*(?:Over|Under|Points?)?/i);
+    if (!m) return "";
+    const n = Number.parseFloat(String(m[1]).replace(",", "."));
+    if (!Number.isFinite(n)) return "";
+    return `${formatLineNumber(n)}+Points`;
+}
+
+function parseSelectionLabel(label, mainCategoryContext) {
+    const parts = String(label || "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+    if (parts.length < 2) return null;
+
+    const value = parseValueToken(parts[parts.length - 1]);
+    if (value == null) return null;
+
+    const first = parts[0] || "";
+    const second = parts[1] || "";
+
+    // Full inline form:
+    // "1st Quarter - To Score 15+ Points, Shai Gilgeous-Alexander, +680"
+    if (parts.length >= 3 && first.match(/\d+(?:[.,]\d+)?\+?\s*points?/i)) {
+        const mainCategory = normalizeMainCategory(first);
+        const player = normalizeDetailToken(second);
+        if (!mainCategory || !looksLikePlayerName(player)) return null;
+        return { category: `${mainCategory}:${player}`, value };
+    }
+
+    // Main category in first token with player prefix:
+    // "Shai Gilgeous-Alexander - Alt Points, 22.5 Over, -1400 Odds"
+    const dashed = first.match(/^(.*?)\s-\s(.*)$/);
+    if (dashed && parts.length >= 3) {
+        const player = normalizeDetailToken(dashed[1]);
+        const mainCategory = normalizeMainCategory(dashed[2]);
+        const points = parsePointsToken(second);
+        if (!mainCategory || !points || !looksLikePlayerName(player)) return null;
+        return { category: `${mainCategory}${points}:${player}`, value };
+    }
+
+    // Contextual form:
+    // main category captured earlier, then "Player Name, Over 31.5, -110 Odds"
+    const player = normalizeDetailToken(first);
+    const mainCategory = normalizeMainCategory(mainCategoryContext);
+    const points = parsePointsToken(second);
+    if (!mainCategory || !points || !looksLikePlayerName(player)) return null;
+    return { category: `${mainCategory}${points}:${player}`, value };
 }
 
 

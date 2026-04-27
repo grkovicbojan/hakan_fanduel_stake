@@ -181,9 +181,9 @@ async function handleExtractSub(task) {
 
 
   const mainWebsite = await findMainWebsiteByUrl(websiteUrl);
-  console.log("mainWebsite", mainWebsite);
-  const websiteScrape = await findWebsiteByUrl(mainWebsite.website, ScrapeTypes.SCRAPE);
-  const websiteApi = await findWebsiteByUrl(mainWebsite.website, ScrapeTypes.API);
+  const mainWebsiteUrl = mainWebsite?.website || websiteUrl;
+  const websiteScrape = await findWebsiteByUrl(mainWebsiteUrl, ScrapeTypes.SCRAPE);
+  const websiteApi = await findWebsiteByUrl(mainWebsiteUrl, ScrapeTypes.API);
 
   if (websiteScrape) {
     detailed = await handleExtractSubScrape(task);
@@ -201,13 +201,35 @@ async function handleExtractSub(task) {
     return;
   }
 
-  await upsertOddInfos(
-    detailed.map((item) => ({
-      url: item.url,
-      category: item.category,
-      value: Number(item.value)
+  const rows = detailed
+    .map((item) => ({
+      url: typeof item?.url === "string" ? item.url.trim() : "",
+      category: typeof item?.category === "string" ? item.category.trim() : "",
+      value: Number(item?.value)
     }))
-  );
+    .filter((item) => item.url && item.category && Number.isFinite(item.value));
+
+  const dropped = detailed.length - rows.length;
+  if (dropped > 0) {
+    logger.warn("EXTRACT_SUB dropped invalid odd rows before upsert.", {
+      websiteUrl,
+      inputCount: detailed.length,
+      validCount: rows.length,
+      dropped
+    });
+  } else {
+    logger.info("EXTRACT_SUB odd rows prepared for upsert.", {
+      websiteUrl,
+      count: rows.length
+    });
+  }
+
+  if (!rows.length) {
+    logger.warn("EXTRACT_SUB skipped: no valid odd rows after validation.", { websiteUrl });
+    return;
+  }
+
+  await upsertOddInfos(rows);
 }
 
 async function handleCompareMatch(task) {
