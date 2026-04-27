@@ -1,5 +1,13 @@
 import { query } from "./pool.js";
 
+export async function findMainWebsiteByUrl(url) {
+  const { rows } = await query(
+    `SELECT website FROM match_website_infos WHERE url = $1`,
+    [url]
+  );
+  return rows[0] || null;
+}
+
 export async function replaceMatchWebsiteInfos(website, rows) {
   const urls = rows.map((r) => r.url);
 

@@ -21,7 +21,7 @@ export function createApiRouter({ queue }) {
       }
 
       const website = await findWebsiteByUrl(url, ScrapeTypes.SCRAPE);
-      if (!website) {
+      if (type == "M" && !website) {
         return res.status(404).json({ result: "not_found", message: "Website not found." });
       }
 

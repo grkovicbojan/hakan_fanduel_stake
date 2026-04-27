@@ -52,6 +52,41 @@ function sameHost(a, siteUrl) {
     }
 }
 
+/**
+ * FanDuel JSON-LD often uses host-only paths (no scheme), e.g.
+ * "sportsbook.fanduel.com/basketball/nba/team-a-@-team-b-35521856".
+ */
+function normalizePotentialMatchUrl(raw, siteUrl) {
+    const t = String(raw || "").trim();
+    if (!t) return null;
+    if (/^https?:\/\//i.test(t)) {
+        try {
+            return new URL(t).href;
+        } catch {
+            return null;
+        }
+    }
+    if (/^sportsbook\.fanduel\.com\//i.test(t)) {
+        try {
+            return new URL(`https://${t}`).href;
+        } catch {
+            return null;
+        }
+    }
+    if (t.startsWith("//")) {
+        try {
+            return new URL(`https:${t}`).href;
+        } catch {
+            return null;
+        }
+    }
+    try {
+        return new URL(t, siteUrl).href;
+    } catch {
+        return null;
+    }
+}
+
 
 export function extractFanduelSportbookMatches(html, websiteUrl) {
     const fromJson = extractFromScriptJson(html, websiteUrl);
@@ -93,14 +128,27 @@ function dedupeByCanonicalMatchUrl(rows) {
 
 function extractFromScriptJson(html, siteUrl) {
     const out = [];
+    const body = String(html || "").trim();
+
+    // Some extension payloads are raw JSON-LD arrays/objects (no <script> wrapper).
+    if ((body.startsWith("{") || body.startsWith("[")) && body.length <= 4_000_000) {
+        try {
+            const parsed = JSON.parse(body);
+            walkJsonForMatches(parsed, 0, siteUrl, out, new WeakSet());
+            return out;
+        } catch {
+            // continue to script tag scan fallback
+        }
+    }
+
     const scriptTag = /<script[^>]*>([\s\S]*?)<\/script>/gi;
     let m;
     while ((m = scriptTag.exec(html))) {
-        const body = m[1].trim();
-        if (!body.startsWith("{") && !body.startsWith("[")) continue;
-        if (body.length > 4_000_000) continue;
+        const scriptBody = m[1].trim();
+        if (!scriptBody.startsWith("{") && !scriptBody.startsWith("[")) continue;
+        if (scriptBody.length > 4_000_000) continue;
         try {
-            const parsed = JSON.parse(body);
+            const parsed = JSON.parse(scriptBody);
             walkJsonForMatches(parsed, 0, siteUrl, out, new WeakSet());
         } catch {
             /* not JSON */
@@ -153,7 +201,7 @@ function dedupeMatches(rows) {
 
 /**
  * Pull candidate objects from parsed JSON (embedded in HTML).
- * Looks for sibling-like fields: a display name + an absolute http(s) URL on the same host.
+ * Looks for sibling-like fields: a display name + a URL (absolute or FanDuel host-only) on the same host.
  */
 function walkJsonForMatches(node, depth, siteUrl, out, stack) {
     if (depth > 35 || node == null) return;
@@ -178,8 +226,11 @@ function walkJsonForMatches(node, depth, siteUrl, out, stack) {
         if (NAME_KEYS.has(k) && t.length > 1 && t.length < 220 && !/^https?:\/\//i.test(t)) {
             if (!name || t.length > name.length) name = t;
         }
-        if (URL_KEYS.has(k) && /^https?:\/\//i.test(t) && sameHost(t, siteUrl)) {
-            if (!IGNORE_PATH.test(new URL(t).pathname)) url = t;
+        if (URL_KEYS.has(k)) {
+            const abs = normalizePotentialMatchUrl(t, siteUrl);
+            if (abs && sameHost(abs, siteUrl) && !IGNORE_PATH.test(new URL(abs).pathname)) {
+                url = abs;
+            }
         }
     }
 

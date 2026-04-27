@@ -69,9 +69,16 @@
       const targetHitCount = await runTargetInteraction(skipTargetClicks);      
       let data;
 
+      console.log("isFanDuelPage", isFanDuelPage());
+
       if( isFanDuelPage() ) {
-        const tag = document.querySelector('ul.af.s.h.i.j.ah.ai.m.aj.o.ak.q.al');
-        data = tag.innerHTML;
+        if( message.isMain === true ) {
+          const tag = document.querySelector('script[type="application/ld+json"][data-react-helmet="true"]');
+          data = tag.innerHTML;
+        } else {
+          const tag = document.querySelector('main div:nth-of-type(1) div:nth-of-type(1) div:nth-of-type(1) div:nth-of-type(5) ul.af.s.h.i.j.ah.ai.m.aj.o.ak.q.al');
+          data = tag.outerHTML;
+        }
       } else {
         data = document.documentElement.outerHTML;
       }

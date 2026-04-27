@@ -17,7 +17,7 @@ import { findWebsiteByUrl, findWebsiteByUrlAny, listWebsites, ScrapeTypes } from
 import { getOddsByUrl, upsertOddInfos } from "../db/oddRepo.js";
 import { upsertComparedInfo } from "../db/comparisonRepo.js";
 import { insertAlert } from "../db/alertsRepo.js";
-import { replaceMatchWebsiteInfos } from "../db/matchWebsiteRepo.js";
+import { replaceMatchWebsiteInfos, findMainWebsiteByUrl } from "../db/matchWebsiteRepo.js";
 import { logger } from "../lib/logger.js";
 
 async function handleExtractMainScrape(task) {
@@ -77,6 +77,8 @@ async function handleExtractMain(task) {
     });
     return;
   }
+
+  console.log("extractedMatches", extractedMatches);
 
   await replaceMatchWebsiteInfos(
     websiteUrl,
@@ -177,8 +179,11 @@ async function handleExtractSub(task) {
   const websiteUrl = task.note;
   let detailed = [];
 
-  const websiteScrape = await findWebsiteByUrl(websiteUrl, ScrapeTypes.SCRAPE);
-  const websiteApi = await findWebsiteByUrl(websiteUrl, ScrapeTypes.API);
+
+  const mainWebsite = await findMainWebsiteByUrl(websiteUrl);
+  console.log("mainWebsite", mainWebsite);
+  const websiteScrape = await findWebsiteByUrl(mainWebsite.website, ScrapeTypes.SCRAPE);
+  const websiteApi = await findWebsiteByUrl(mainWebsite.website, ScrapeTypes.API);
 
   if (websiteScrape) {
     detailed = await handleExtractSubScrape(task);

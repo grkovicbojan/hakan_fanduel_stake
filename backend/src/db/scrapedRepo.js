@@ -17,7 +17,9 @@ export async function upsertScrapedInfo({ url, data, timestamp }) {
 
 /** Latest scrape row for this website config URL (handles root vs /navigation/... tab URLs). */
 export async function getScrapedByUrl(siteUrl) {
+  console.log("siteUrl", siteUrl);
   const u = siteUrl?.trim();
+  console.log("u", u);
   if (!u) return null;
   const { rows } = await query(
     `SELECT si.*
