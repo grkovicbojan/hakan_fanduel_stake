@@ -4,7 +4,7 @@ import react from "@vitejs/plugin-react";
 /** Dev / preview: proxy API + WS through the Vite port so one origin works (helps VPNs / firewalls). */
 function backendHttpTarget(mode, envDir) {
   const env = loadEnv(mode, envDir, "");
- 
+  const serverIp = Number.parseInt(env.SERVER_IP); 
   return `https://${serverIp}`;
 }
 
