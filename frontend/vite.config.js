@@ -4,14 +4,14 @@ import react from "@vitejs/plugin-react";
 /** Dev / preview: proxy API + WS through the Vite port so one origin works (helps VPNs / firewalls). */
 function backendHttpTarget(mode, envDir) {
   const env = loadEnv(mode, envDir, "");
-  const port = Number.parseInt(env.BACKEND_PORT || "4000", 10);
-  return `http://127.0.0.1:${port}`;
+ 
+  return `https://${serverIp}`;
 }
 
 function backendWsTarget(mode, envDir) {
   const env = loadEnv(mode, envDir, "");
-  const port = Number.parseInt(env.WEBSOCKET_PORT || "4001", 10);
-  return `ws://127.0.0.1:${port}`;
+  const serverIp = Number.parseInt(env.SERVER_IP);
+  return `https://${serverIp}/ws`;
 }
 
 const proxy = (mode, envDir) => ({
