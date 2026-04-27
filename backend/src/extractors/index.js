@@ -50,11 +50,20 @@ export async function extractMatchFromAPI(websiteUrl) {
 }
 
 export function extractDetailFromWebsite(html, websiteUrl) {
+
+  let result = [];
   if (!html || typeof html !== "string") return [];
   if (isFanduelSportsbook(websiteUrl)) {
-    return extractFanduelSportbookDetails(html, websiteUrl);
+    const rows = extractFanduelSportbookDetails(html, websiteUrl);
+    result = rows
+      .map((item) => ({
+        url: typeof item?.url === "string" ? item.url.trim() : "",
+        category: typeof item?.category === "string" ? item.category.trim() : "",
+        value: Number(item?.value) > 0 ? Number(item?.value) / 100 + 1 : -100 / Number(item?.value) + 1
+      }))
+      .filter((item) => item.url && item.category && Number.isFinite(item.value));
   }
-  return [];
+  return result;
 }
 
 export async function extractDetailFromAPI(websiteUrl) {

@@ -4,8 +4,7 @@ export async function getPendingMatchIds(limit = 500) {
   const { rows } = await query(
     `SELECT id
      FROM match_infos
-     WHERE status = 0
-       AND baseline_url <> ''
+     WHERE baseline_url <> ''
        AND comparison_url <> ''
        AND name <> ''
        AND baseline_match_url <> ''
