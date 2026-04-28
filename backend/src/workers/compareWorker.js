@@ -263,8 +263,6 @@ async function handleCompareMatch(task) {
       continue;
     }
 
-    logger.info("compare match row", { baselineItem, comparisonItem });
-
     const arbitrage = (comparisonItem.value / baselineItem.value) * 100;
     await upsertComparedInfo({
       name: matchInfo.name,
