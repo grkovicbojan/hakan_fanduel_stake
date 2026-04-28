@@ -287,6 +287,9 @@ export function extractFanduelSportbookDetails(html, websiteUrl) {
     const processLabels = (labels) => {
         let mainCategory = "";
         for (const label of labels) {
+            if (/\bunder\b/i.test(label)) {
+                continue;
+            }
             if (!label.includes(",")) {
                 if (isUsefulMainCategoryLabel(label)) {
                     mainCategory = normalizeMainCategory(label);
@@ -353,6 +356,7 @@ function normalizeMainCategory(raw) {
         .replace(/\bAst\b/gi, "Assists")
         .replace(/\bReb\b/gi, "Rebounds")
         .replace(/\bPts\b/gi, "Points")
+        .replace(/\bPlayer\b/gi, "")
         .replace(/\bAssist\b/gi, "Assists")
         .replace(/\bAlt\b/gi, "")
         .replace(/\s+/g, " ")

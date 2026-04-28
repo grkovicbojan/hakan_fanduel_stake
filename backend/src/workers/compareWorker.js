@@ -235,8 +235,16 @@ async function handleExtractSub(task) {
 async function handleCompareMatch(task) {
   const matchInfo = await getMatchById(task.note);
   if (!matchInfo) return;
-  const baselineList = await getOddsByUrl(matchInfo.baseline_match_url);
-  const comparisonList = await getOddsByUrl(matchInfo.comparison_match_url);
+  const nowMs = Date.now();
+  const maxAgeMs = 300 * 1000;
+  const isFreshOdd = (item) => {
+    const ts = Date.parse(item?.timestamp || "");
+    if (!Number.isFinite(ts)) return false;
+    return nowMs - ts <= maxAgeMs;
+  };
+
+  const baselineList = (await getOddsByUrl(matchInfo.baseline_match_url)).filter(isFreshOdd);
+  const comparisonList = (await getOddsByUrl(matchInfo.comparison_match_url)).filter(isFreshOdd);
 
   const byCategory = new Map();
   for (const item of comparisonList) {
