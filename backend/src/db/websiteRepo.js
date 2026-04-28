@@ -8,7 +8,7 @@ export const ScrapeTypes = {
 /** API-mode sites whose last scrape (per scraped_infos, same URL rules as dashboard) is absent or older than 10s. */
 export async function listApiWebsites() {
   const { rows } = await query(
-    `SELECT w.url, ls.last_scraped_at
+    `SELECT w.url, ls.last_scraped_at, w.scrape_interval
      FROM website_infos w
      LEFT JOIN LATERAL (
        SELECT MAX(si.timestamp) AS last_scraped_at
@@ -18,7 +18,6 @@ export async function listApiWebsites() {
           OR rtrim(w.url, '/') LIKE rtrim(si.url, '/') || '/%'
      ) ls ON true
      WHERE w.scrape_type = $1
-       AND (ls.last_scraped_at IS NULL OR ls.last_scraped_at < NOW() - INTERVAL '100 seconds')
      ORDER BY w.id DESC`,
     [ScrapeTypes.API]
   );

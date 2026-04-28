@@ -79,7 +79,9 @@ CREATE TABLE IF NOT EXISTS compared_infos (
   comparison_match_url TEXT NOT NULL,
   category TEXT NOT NULL,
   baseline_value DOUBLE PRECISION NOT NULL,
+  baseline_timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   comparison_value DOUBLE PRECISION NOT NULL,
+  comparison_timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   arbitrage DOUBLE PRECISION NOT NULL,
   timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   PRIMARY KEY (name, baseline_match_url, comparison_match_url, category)

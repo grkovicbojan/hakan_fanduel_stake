@@ -270,7 +270,9 @@ async function handleCompareMatch(task) {
       comparisonMatchUrl: matchInfo.comparison_match_url,
       category: baselineItem.category,
       baselineValue: baselineItem.value,
+      baselineTimestamp: baselineItem.timestamp,
       comparisonValue: comparisonItem.value,
+      comparisonTimestamp: comparisonItem.timestamp,
       arbitrage
     });
   }

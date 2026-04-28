@@ -222,7 +222,9 @@ export default function Dashboard() {
             <th>ComparisonMatchUrl</th>
             <th>Category</th>
             <th>BaselineValue</th>
+            <th>BaselineTime</th>
             <th>ComparisonValue</th>
+            <th>ComparisonTime</th>
             <th>Arbitrage(%)</th>
             <th>Timestamp</th>
           </tr>
@@ -235,11 +237,13 @@ export default function Dashboard() {
               <tr key={keyOf(row)}>
                 <td>{up ? "🔼" : "🔽"}</td>
                 <td>{row.name}</td>
-                <td>{row.baseline_match_url}</td>
-                <td>{row.comparison_match_url}</td>
+                <td><a href={row.baseline_match_url} target="_blank" rel="noopener noreferrer">Base Match Url</a></td>
+                <td><a href={row.comparison_match_url} target="_blank" rel="noopener noreferrer">Compared Match Url</a></td>
                 <td>{row.category}</td>
                 <td>{Number(row.baseline_value).toFixed(2)}</td>
+                <td>{new Date(row.baseline_timestamp).toLocaleString()}</td>
                 <td>{Number(row.comparison_value).toFixed(2)}</td>
+                <td>{new Date(row.comparison_timestamp).toLocaleString()}</td>
                 <td>{Number(row.arbitrage).toFixed(4)}</td>
                 <td>{new Date(row.timestamp).toLocaleString()}</td>
               </tr>
