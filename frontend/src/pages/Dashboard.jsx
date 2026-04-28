@@ -236,8 +236,8 @@ export default function Dashboard() {
                 <td>{row.baseline_match_url}</td>
                 <td>{row.comparison_match_url}</td>
                 <td>{row.category}</td>
-                <td>{row.baseline_value}</td>
-                <td>{row.comparison_value}</td>
+                <td>{Number(row.baseline_value).toFixed(2)}</td>
+                <td>{Number(row.comparison_value).toFixed(2)}</td>
                 <td>{Number(row.arbitrage).toFixed(4)}</td>
                 <td>{new Date(row.timestamp).toLocaleString()}</td>
               </tr>

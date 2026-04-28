@@ -66,18 +66,23 @@
 
     (async () => {
       const skipTargetClicks = message.skipTargetClicks === true;
-      const targetHitCount = await runTargetInteraction(skipTargetClicks);      
+      const targetHitCount = await runTargetInteraction(skipTargetClicks);
       let data;
 
       console.log("isFanDuelPage", isFanDuelPage());
 
-      if( isFanDuelPage() ) {
-        if( message.isMain === true ) {
+      if (isFanDuelPage()) {
+        if (message.isMain === true) {
           const tag = document.querySelector('script[type="application/ld+json"][data-react-helmet="true"]');
           data = tag.innerHTML;
         } else {
           const tag = document.querySelector('main div:nth-of-type(1) div:nth-of-type(1) div:nth-of-type(1) div:nth-of-type(5) ul.af.s.h.i.j.ah.ai.m.aj.o.ak.q.al');
-          data = tag.outerHTML;
+          const clone = tag.cloneNode(true);
+
+          clone.querySelectorAll("svg, img").forEach(el => el.remove());
+          clone.querySelectorAll("*").forEach(el => el.removeAttribute("class"));
+          clone.querySelectorAll("*").forEach(el => el.removeAttribute("style"));
+          data = clone.outerHTML;
         }
       } else {
         data = document.documentElement.outerHTML;
