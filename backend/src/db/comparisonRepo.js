@@ -41,7 +41,7 @@ export async function getDashboardRows(thresholdPercent = 0) {
   const whereClause = timeFilter ? `${timeFilter} AND ${thresholdFilter}` : `WHERE ${thresholdFilter}`;
   const { rows } = await query(
     `SELECT id, name, baseline_match_url, comparison_match_url, category,
-            baseline_value, comparison_value, arbitrage, timestamp
+            baseline_value, comparison_value, arbitrage, timestamp, baseline_timestamp, comparison_timestamp
      FROM compared_infos
      ${whereClause}
      ORDER BY arbitrage DESC, timestamp DESC`
