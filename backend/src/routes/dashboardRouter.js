@@ -13,6 +13,11 @@ function parseComparisonList(raw) {
 
 export function createDashboardRouter() {
   const router = express.Router();
+  const parseThreshold = (raw) => {
+    const n = Number.parseFloat(String(raw ?? ""));
+    if (!Number.isFinite(n)) return 0;
+    return Math.max(0, n);
+  };
 
   router.get("/websites", async (req, res, next) => {
     try {
@@ -45,9 +50,11 @@ export function createDashboardRouter() {
 
   router.get("/", async (req, res, next) => {
     try {
-      const rows = await getDashboardRows();
+      const threshold = parseThreshold(req.query.threshold);
+      const rows = await getDashboardRows(threshold);
       res.json({
         rows,
+        threshold,
         disableOdds10mDeadline: env.disableOdds10mDeadline
       });
     } catch (error) {

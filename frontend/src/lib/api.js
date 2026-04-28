@@ -45,7 +45,10 @@ function url(path) {
 }
 
 export const api = {
-  getDashboard: () => fetch(url("/dashboard")).then(parseJson),
+  getDashboard: ({ threshold = 0 } = {}) =>
+    fetch(`${url("/dashboard")}?threshold=${encodeURIComponent(Math.max(0, Number(threshold) || 0))}`).then(
+      parseJson
+    ),
   getDashboardWebsites: () => fetch(url("/dashboard/websites")).then(parseJson),
   getLatestScrapedByUrl: (u) =>
     fetch(`${url("/setting/scraped")}?url=${encodeURIComponent(u)}`).then(parseJson),

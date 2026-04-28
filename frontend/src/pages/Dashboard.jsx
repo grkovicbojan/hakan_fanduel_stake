@@ -85,12 +85,19 @@ export default function Dashboard() {
   const [websiteOverview, setWebsiteOverview] = useState(null);
   const [detailWebsite, setDetailWebsite] = useState(null);
   const [disableOdds10mDeadline, setDisableOdds10mDeadline] = useState(false);
+  const [thresholdInput, setThresholdInput] = useState("0");
+  const threshold = useMemo(() => {
+    const n = Number.parseFloat(thresholdInput);
+    if (!Number.isFinite(n)) return 0;
+    return Math.max(0, n);
+  }, [thresholdInput]);
   const [filter, setFilter] = useState("");
   const [page, setPage] = useState(1);
 
   useEffect(() => {
+    setOldOddsData([]);
     api
-      .getDashboard()
+      .getDashboard({ threshold })
       .then((payload) => {
         setCurrentOddsData(payload.rows ?? []);
         setDisableOdds10mDeadline(Boolean(payload.disableOdds10mDeadline));
@@ -101,9 +108,9 @@ export default function Dashboard() {
       setOldOddsData((prevCurrent) => prevCurrent);
       setCurrentOddsData(payload.rows ?? []);
       setDisableOdds10mDeadline(Boolean(payload.disableOdds10mDeadline));
-    });
+    }, threshold);
     return () => socket.close();
-  }, []);
+  }, [threshold]);
 
   useEffect(() => {
     const onKeyDown = (event) => {
@@ -186,6 +193,22 @@ export default function Dashboard() {
             setFilter(event.target.value);
             setPage(1);
           }}
+        />
+        <input
+          type="number"
+          min={0}
+          step="0.01"
+          placeholder="Threshold %"
+          value={thresholdInput}
+          onChange={(event) => {
+            setThresholdInput(event.target.value);
+            setPage(1);
+          }}
+          onBlur={() => {
+            const n = Number.parseFloat(thresholdInput);
+            setThresholdInput(Number.isFinite(n) ? String(Math.max(0, n)) : "0");
+          }}
+          title="Show rows where comparison odd > baseline odd * (1 + threshold/100)"
         />
       </div>
       <table>

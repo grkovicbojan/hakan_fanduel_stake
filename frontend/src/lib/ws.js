@@ -23,22 +23,24 @@ function wsHost() {
 /**
  * Production: serve the app and proxy `/setting`, `/ws`, etc. to the backend domain (no port in URL if using TLS defaults).
  */
-export function createDashboardSocket(onMessage) {
+export function createDashboardSocket(onMessage, threshold = 0) {
   const origin =
     typeof import.meta.env.VITE_API_ORIGIN === "string" ? import.meta.env.VITE_API_ORIGIN.trim() : "";
   const proto =
     typeof window !== "undefined" && window.location.protocol === "https:" ? "wss:" : "ws:";
+  const thresholdParam = `threshold=${encodeURIComponent(Math.max(0, Number(threshold) || 0))}`;
+  const wsPathWithQuery = `${WS_PATH}?${thresholdParam}`;
   let socketUrl;
   if (origin) {
     try {
       const u = new URL(origin);
       const w = u.protocol === "https:" ? "wss:" : "ws:";
-      socketUrl = `${w}//${u.host}${WS_PATH}`;
+      socketUrl = `${w}//${u.host}${wsPathWithQuery}`;
     } catch {
       socketUrl = `${proto}//${wsHost()}:${wsPort}`;
     }
   } else if (typeof window !== "undefined") {
-    socketUrl = `${proto}//${window.location.host}${WS_PATH}`;
+    socketUrl = `${proto}//${window.location.host}${wsPathWithQuery}`;
   } else {
     socketUrl = `ws://${wsHost()}:${wsPort}`;
   }
