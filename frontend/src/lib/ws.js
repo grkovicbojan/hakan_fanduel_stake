@@ -54,6 +54,8 @@ export function createDashboardSocket(onMessage, threshold = 0) {
     socketUrl = `ws://${wsHost()}:${wsPort}${wsPathWithQuery}`;
   }
 
+  console.log("socketUrl", socketUrl);
+  
   const socket = new WebSocket(socketUrl);
   socket.onmessage = (event) => {
     const payload = JSON.parse(event.data);

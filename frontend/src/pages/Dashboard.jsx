@@ -87,13 +87,17 @@ export default function Dashboard() {
   const [detailWebsite, setDetailWebsite] = useState(null);
   const [disableOdds10mDeadline, setDisableOdds10mDeadline] = useState(false);
   const [thresholdInput, setThresholdInput] = useState("0");
-  const threshold = useMemo(() => {
-    const n = Number.parseFloat(thresholdInput);
-    if (!Number.isFinite(n)) return 0;
-    return Math.max(0, n);
-  }, [thresholdInput]);
+  const [threshold, setThreshold] = useState(0);
   const [filter, setFilter] = useState("");
   const [page, setPage] = useState(1);
+
+  const applyThresholdFromInput = () => {
+    const n = Number.parseFloat(thresholdInput);
+    const next = Number.isFinite(n) ? Math.max(0, n) : 0;
+    setThresholdInput(String(next));
+    setThreshold(next);
+    setPage(1);
+  };
 
   useEffect(() => {
     activeThresholdRef.current = threshold;
@@ -212,11 +216,12 @@ export default function Dashboard() {
           value={thresholdInput}
           onChange={(event) => {
             setThresholdInput(event.target.value);
-            setPage(1);
           }}
-          onBlur={() => {
-            const n = Number.parseFloat(thresholdInput);
-            setThresholdInput(Number.isFinite(n) ? String(Math.max(0, n)) : "0");
+          onBlur={applyThresholdFromInput}
+          onKeyDown={(event) => {
+            if (event.key !== "Enter") return;
+            event.preventDefault();
+            applyThresholdFromInput();
           }}
           title="Show rows where comparison odd > baseline odd * (1 + threshold/100)"
         />
