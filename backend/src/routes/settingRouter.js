@@ -12,6 +12,19 @@ import {
 } from "../db/matchWebsiteRepo.js";
 import { getOddsByUrl } from "../db/oddRepo.js";
 
+function statusFromLastScraped(lastScrapedAt, scrapeIntervalSeconds, nowMs) {
+  if (!lastScrapedAt || !Number.isFinite(scrapeIntervalSeconds) || scrapeIntervalSeconds <= 0) {
+    return { status: "not_ok", lastScrapedAgoSeconds: null };
+  }
+  const ts = new Date(lastScrapedAt).getTime();
+  if (!Number.isFinite(ts)) {
+    return { status: "not_ok", lastScrapedAgoSeconds: null };
+  }
+  const agoSeconds = Math.max(0, Math.floor((nowMs - ts) / 1000));
+  const ok = agoSeconds <= scrapeIntervalSeconds;
+  return { status: ok ? "ok" : "not_ok", lastScrapedAgoSeconds: agoSeconds };
+}
+
 export function createSettingRouter() {
   const router = express.Router();
 
@@ -43,8 +56,22 @@ export function createSettingRouter() {
 
   router.get("/match-websites", async (req, res, next) => {
     try {
+      const now = Date.now();
       const rows = await listAllMatchWebsiteInfosWithScrapeStats();
-      res.json(rows);
+      const mapped = rows.map((row) => {
+        const scrapeInterval = Number(row.scrape_interval);
+        const { status, lastScrapedAgoSeconds } = statusFromLastScraped(
+          row.last_scraped_at,
+          scrapeInterval,
+          now
+        );
+        return {
+          ...row,
+          status,
+          lastScrapedAgoSeconds
+        };
+      });
+      res.json(mapped);
     } catch (error) {
       next(error);
     }
@@ -70,11 +97,19 @@ export function createSettingRouter() {
 
       const rows = websites.map((site) => {
         const lastScrapedAt = site.last_scraped_at;
-        const healthy = lastScrapedAt
-          ? now - new Date(lastScrapedAt).getTime() <= site.refresh_interval * 1000
-          : false;
+        const scrapeInterval = Number(site.scrape_interval);
+        const { status, lastScrapedAgoSeconds } = statusFromLastScraped(
+          lastScrapedAt,
+          scrapeInterval,
+          now
+        );
         const { last_scraped_at: _ls, ...rest } = site;
-        return { ...rest, status: healthy ? "ok" : "not_ok", lastScrapedAt: lastScrapedAt || null };
+        return {
+          ...rest,
+          status,
+          lastScrapedAt: lastScrapedAt || null,
+          lastScrapedAgoSeconds
+        };
       });
       res.json(rows);
     } catch (error) {

@@ -35,13 +35,6 @@ function isStakeSiteRow(row) {
   return /stake\.(com|de)/i.test(row?.url || "");
 }
 
-function secondsSince(iso) {
-  if (!iso) return null;
-  const t = new Date(iso).getTime();
-  if (Number.isNaN(t)) return null;
-  return Math.max(0, Math.floor((Date.now() - t) / 1000));
-}
-
 function groupMatchRows(rows) {
   const map = new Map();
   for (const row of rows) {
@@ -50,16 +43,6 @@ function groupMatchRows(rows) {
     map.get(w).push(row);
   }
   return Array.from(map.entries());
-}
-
-function subScrapeStatusOk(lastScrapedAt, scrapeIntervalSeconds) {
-  if (lastScrapedAt == null || scrapeIntervalSeconds == null || scrapeIntervalSeconds <= 0) {
-    return false;
-  }
-  const ago = secondsSince(lastScrapedAt);
-  if (ago === null) return false;
-  const threshold = scrapeIntervalSeconds * 1.5;
-  return ago <= threshold;
 }
 
 export default function Settings() {
@@ -296,7 +279,7 @@ export default function Settings() {
         </thead>
         <tbody>
           {rows.map((row) => {
-            const mainAgo = secondsSince(row.lastScrapedAt);
+            const mainAgo = Number.isFinite(row.lastScrapedAgoSeconds) ? row.lastScrapedAgoSeconds : null;
             return (
               <tr key={row.id}>
                 <td>{row.status === "ok" ? "🟢" : "🔴"}</td>
@@ -329,8 +312,7 @@ export default function Settings() {
       <h2>Match Info Based on Website</h2>
       <p className="muted small">
         All sub-URLs from match_website_infos, grouped by main website. Status uses last odds update (extension scrape
-        or Stake API) vs{" "}
-        <code>1.5 × scrapeInterval</code> for that main site.
+        or Stake API) vs <code>scrapeInterval</code> for that main site.
       </p>
       {matchOverviewLoading ? (
         <p>Loading…</p>
@@ -355,8 +337,8 @@ export default function Settings() {
               </thead>
               <tbody>
                 {items.map((item) => {
-                  const ago = secondsSince(item.last_scraped_at);
-                  const ok = subScrapeStatusOk(item.last_scraped_at, item.scrape_interval);
+                  const ago = Number.isFinite(item.lastScrapedAgoSeconds) ? item.lastScrapedAgoSeconds : null;
+                  const ok = item.status === "ok";
                   return (
                     <tr key={`${item.website}|${item.url}`}>
                       <td>{item.name}</td>
