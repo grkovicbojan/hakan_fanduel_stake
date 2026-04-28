@@ -20,29 +20,38 @@ function wsHost() {
   return "localhost";
 }
 
+function parseApiOrigin(raw) {
+  const t = typeof raw === "string" ? raw.trim() : "";
+  if (!t) return null;
+  try {
+    return new URL(t);
+  } catch {
+    // Allow shorthand values like "api.example.com" in env.
+    try {
+      return new URL(`https://${t}`);
+    } catch {
+      return null;
+    }
+  }
+}
+
 /**
  * Production: serve the app and proxy `/setting`, `/ws`, etc. to the backend domain (no port in URL if using TLS defaults).
  */
 export function createDashboardSocket(onMessage, threshold = 0) {
-  const origin =
-    typeof import.meta.env.VITE_API_ORIGIN === "string" ? import.meta.env.VITE_API_ORIGIN.trim() : "";
+  const origin = parseApiOrigin(import.meta.env.VITE_API_ORIGIN);
   const proto =
     typeof window !== "undefined" && window.location.protocol === "https:" ? "wss:" : "ws:";
   const thresholdParam = `threshold=${encodeURIComponent(Math.max(0, Number(threshold) || 0))}`;
   const wsPathWithQuery = `${WS_PATH}?${thresholdParam}`;
   let socketUrl;
   if (origin) {
-    try {
-      const u = new URL(origin);
-      const w = u.protocol === "https:" ? "wss:" : "ws:";
-      socketUrl = `${w}//${u.host}${wsPathWithQuery}`;
-    } catch {
-      socketUrl = `${proto}//${wsHost()}:${wsPort}`;
-    }
+    const w = origin.protocol === "https:" ? "wss:" : "ws:";
+    socketUrl = `${w}//${origin.host}${wsPathWithQuery}`;
   } else if (typeof window !== "undefined") {
     socketUrl = `${proto}//${window.location.host}${wsPathWithQuery}`;
   } else {
-    socketUrl = `ws://${wsHost()}:${wsPort}`;
+    socketUrl = `ws://${wsHost()}:${wsPort}${wsPathWithQuery}`;
   }
 
   const socket = new WebSocket(socketUrl);

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../lib/api.js";
 import { createDashboardSocket } from "../lib/ws.js";
 
@@ -82,6 +82,7 @@ function WebsiteDetail({ w, onClose }) {
 export default function Dashboard() {
   const [currentOddsData, setCurrentOddsData] = useState([]);
   const [oldOddsData, setOldOddsData] = useState([]);
+  const activeThresholdRef = useRef(0);
   const [websiteOverview, setWebsiteOverview] = useState(null);
   const [detailWebsite, setDetailWebsite] = useState(null);
   const [disableOdds10mDeadline, setDisableOdds10mDeadline] = useState(false);
@@ -95,6 +96,8 @@ export default function Dashboard() {
   const [page, setPage] = useState(1);
 
   useEffect(() => {
+    activeThresholdRef.current = threshold;
+    setCurrentOddsData([]);
     setOldOddsData([]);
     api
       .getDashboard({ threshold })
@@ -105,8 +108,13 @@ export default function Dashboard() {
       .catch(() => {});
     api.getDashboardWebsites().then(setWebsiteOverview).catch(() => {});
     const socket = createDashboardSocket((payload) => {
-      setOldOddsData((prevCurrent) => prevCurrent);
-      setCurrentOddsData(payload.rows ?? []);
+      const payloadThreshold = Math.max(0, Number(payload?.threshold) || 0);
+      // Ignore late updates from an older socket subscription.
+      if (payloadThreshold !== activeThresholdRef.current) return;
+      setCurrentOddsData((prevCurrent) => {
+        setOldOddsData(prevCurrent);
+        return payload.rows ?? [];
+      });
       setDisableOdds10mDeadline(Boolean(payload.disableOdds10mDeadline));
     }, threshold);
     return () => socket.close();
