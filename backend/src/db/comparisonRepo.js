@@ -25,6 +25,8 @@ export async function upsertComparedInfo(item) {
      SET baseline_value = EXCLUDED.baseline_value,
          comparison_value = EXCLUDED.comparison_value,
          arbitrage = EXCLUDED.arbitrage,
+         baseline_timestamp = EXCLUDED.baseline_timestamp,
+         comparison_timestamp = EXCLUDED.comparison_timestamp,
          timestamp = NOW()`,
     [name, baselineMatchUrl, comparisonMatchUrl, category, baselineValue, baselineTimestamp, comparisonValue, comparisonTimestamp, arbitrage]
   );
@@ -36,7 +38,7 @@ export async function getDashboardRows(thresholdPercent = 0) {
     : 100;
   const timeFilter = env.disableOdds10mDeadline
     ? ""
-    : "WHERE timestamp > NOW() - INTERVAL '10 minutes' && baseline_timestamp > NOW() - INTERVAL '10 minutes'  && comparison_timestamp > NOW() - INTERVAL '10 minutes'";
+    : "WHERE timestamp > NOW() - INTERVAL '10 minutes' AND baseline_timestamp > NOW() - INTERVAL '10 minutes'  AND comparison_timestamp > NOW() - INTERVAL '10 minutes'";
   const thresholdFilter = `arbitrage > ${threshold}`;
   const whereClause = timeFilter ? `${timeFilter} AND ${thresholdFilter}` : `WHERE ${thresholdFilter}`;
   const { rows } = await query(
