@@ -237,8 +237,8 @@ export default function Dashboard() {
               <tr key={keyOf(row)}>
                 <td>{up ? "🔼" : "🔽"}</td>
                 <td>{row.name}</td>
-                <td><a href={row.baseline_match_url} target="_blank" rel="noopener noreferrer">Base Match Url</a></td>
-                <td><a href={row.comparison_match_url} target="_blank" rel="noopener noreferrer">Compared Match Url</a></td>
+                <td><a href={row.baseline_match_url} target="_blank" rel="noopener noreferrer" style={{color: "#d6ecff"}}>Base Match Url</a></td>
+                <td><a href={row.comparison_match_url} target="_blank" rel="noopener noreferrer" style={{color: "#d6ecff"}}>Compared Match Url</a></td>
                 <td>{row.category}</td>
                 <td>{Number(row.baseline_value).toFixed(2)}</td>
                 <td>{new Date(row.baseline_timestamp).toLocaleString()}</td>
