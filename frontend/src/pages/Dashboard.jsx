@@ -186,6 +186,7 @@ export default function Dashboard() {
         {disableOdds10mDeadline ? "(all compared rows)" : "(last 10 minutes)"}
       </h2>
       <div className="row">
+        <label>Filter:</label>
         <input
           placeholder="Filter matches/categories/urls"
           value={filter}
@@ -194,6 +195,7 @@ export default function Dashboard() {
             setPage(1);
           }}
         />
+        <label>Threshold:</label>
         <input
           type="number"
           min={0}
