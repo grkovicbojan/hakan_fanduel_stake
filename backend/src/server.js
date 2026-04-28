@@ -90,10 +90,15 @@ async function start() {
     }
   }, 10000);
 
-  createWsServer(env.websocketPort);
-
-  app.listen(env.backendPort, () => {
+  const httpServer = app.listen(env.backendPort, () => {
     logger.info(`Backend listening on ${env.backendPort}`);
+  });
+  const wsPort = Number.isFinite(env.websocketPort) ? env.websocketPort : 0;
+  createWsServer({
+    server: httpServer,
+    serverPath: "/ws",
+    // Keep standalone WS port for local/Vite proxy compatibility.
+    port: wsPort > 0 && wsPort !== env.backendPort ? wsPort : undefined
   });
 }
 
