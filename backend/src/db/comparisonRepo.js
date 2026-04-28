@@ -37,7 +37,7 @@ export async function getDashboardRows(thresholdPercent = 0) {
   const timeFilter = env.disableOdds10mDeadline
     ? ""
     : "WHERE timestamp > NOW() - INTERVAL '10 minutes'";
-  const thresholdFilter = `arbitrage > (100 + ${threshold})`;
+  const thresholdFilter = `arbitrage > ${threshold}`;
   const whereClause = timeFilter ? `${timeFilter} AND ${thresholdFilter}` : `WHERE ${thresholdFilter}`;
   const { rows } = await query(
     `SELECT id, name, baseline_match_url, comparison_match_url, category,
