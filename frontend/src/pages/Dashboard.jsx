@@ -104,8 +104,10 @@ export default function Dashboard() {
   const [filterEnabled, setFilterEnabled] = useState(true);
   const [filter, setFilter] = useState("");
   const [sortByArbitrageEnabled, setSortByArbitrageEnabled] = useState(true);
+  const [sortByNewlyAddedEnabled, setSortByNewlyAddedEnabled] = useState(true);
   const [sortByRemainingEnabled, setSortByRemainingEnabled] = useState(true);
   const [arbitrageOrder, setArbitrageOrder] = useState("desc");
+  const [newlyAddedOrder, setNewlyAddedOrder] = useState("desc");
   const [remainingOrder, setRemainingOrder] = useState("desc");
   const [newlyAddedMinutesInput, setNewlyAddedMinutesInput] = useState("10");
   const [newlyAddedMinutes, setNewlyAddedMinutes] = useState(10);
@@ -195,10 +197,16 @@ export default function Dashboard() {
   }, [filterEnabled, filter, currentOddsData]);
 
   const sorted = useMemo(() => {
-    if (!sortByArbitrageEnabled && !sortByRemainingEnabled) return filtered;
+    if (!sortByArbitrageEnabled && !sortByNewlyAddedEnabled && !sortByRemainingEnabled) return filtered;
     const list = [...filtered];
     const dirArb = arbitrageOrder === "asc" ? 1 : -1;
+    const dirNew = newlyAddedOrder === "asc" ? 1 : -1;
     const dirRemain = remainingOrder === "asc" ? 1 : -1;
+    const createdSortValue = (row) => {
+      const t = new Date(row.timestamp).getTime();
+      if (!Number.isFinite(t)) return Number.NEGATIVE_INFINITY;
+      return t;
+    };
     const remainingSortValue = (row) => {
       const t = new Date(row.start_time).getTime();
       if (!Number.isFinite(t)) return Number.POSITIVE_INFINITY;
@@ -209,6 +217,11 @@ export default function Dashboard() {
         const arbA = Number(Number(a.arbitrage).toFixed(2));
         const arbB = Number(Number(b.arbitrage).toFixed(2));
         if (arbA !== arbB) return (arbA - arbB) * dirArb;
+      }
+      if (sortByNewlyAddedEnabled) {
+        const newA = createdSortValue(a);
+        const newB = createdSortValue(b);
+        if (newA !== newB) return (newA - newB) * dirNew;
       }
       if (sortByRemainingEnabled) {
         const remA = remainingSortValue(a);
@@ -221,8 +234,10 @@ export default function Dashboard() {
   }, [
     filtered,
     sortByArbitrageEnabled,
+    sortByNewlyAddedEnabled,
     sortByRemainingEnabled,
     arbitrageOrder,
+    newlyAddedOrder,
     remainingOrder,
     nowMs
   ]);
@@ -350,6 +365,29 @@ export default function Dashboard() {
           value={arbitrageOrder}
           onChange={(event) => {
             setArbitrageOrder(event.target.value);
+            setPage(1);
+          }}
+        >
+          <option value="desc">Desc</option>
+          <option value="asc">Asc</option>
+        </select>
+        <label>Newly Added:</label>
+        <label>
+          <input
+            type="checkbox"
+            checked={sortByNewlyAddedEnabled}
+            onChange={(event) => {
+              setSortByNewlyAddedEnabled(event.target.checked);
+              setPage(1);
+            }}
+          />{" "}
+          Sort
+        </label>
+        <select
+          disabled={!sortByNewlyAddedEnabled}
+          value={newlyAddedOrder}
+          onChange={(event) => {
+            setNewlyAddedOrder(event.target.value);
             setPage(1);
           }}
         >
