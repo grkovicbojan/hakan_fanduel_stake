@@ -186,9 +186,20 @@ function extractFromAnchors(html, siteUrl) {
                 .filter(Boolean)
                 .pop() || "event";
         const matchName = decodeURIComponent(segment.replace(/[-_]+/g, " ").slice(0, 120));
-        out.push({ matchName, matchUrl: abs, startTime: null });
+        const startTime = extractNearbyStartTime(html, m.index);
+        out.push({ matchName, matchUrl: abs, startTime });
     }
     return out;
+}
+
+function extractNearbyStartTime(html, anchorIdx) {
+    if (!html || !Number.isFinite(anchorIdx)) return null;
+    const start = Math.max(0, anchorIdx - 3000);
+    const end = Math.min(html.length, anchorIdx + 6000);
+    const chunk = html.slice(start, end);
+    const timeAttr = /<time\b[^>]*\bdatetime="([^"]+)"/i.exec(chunk);
+    if (!timeAttr || !timeAttr[1]) return null;
+    return normalizeStartTime(timeAttr[1]);
 }
 
 function dedupeMatches(rows) {

@@ -101,7 +101,12 @@ export default function Dashboard() {
   const [disableOdds10mDeadline, setDisableOdds10mDeadline] = useState(false);
   const [thresholdInput, setThresholdInput] = useState("0");
   const [threshold, setThreshold] = useState(0);
+  const [filterEnabled, setFilterEnabled] = useState(true);
   const [filter, setFilter] = useState("");
+  const [sortByArbitrageEnabled, setSortByArbitrageEnabled] = useState(true);
+  const [sortByRemainingEnabled, setSortByRemainingEnabled] = useState(true);
+  const [arbitrageOrder, setArbitrageOrder] = useState("desc");
+  const [remainingOrder, setRemainingOrder] = useState("desc");
   const [page, setPage] = useState(1);
   const [nowMs, setNowMs] = useState(() => Date.now());
 
@@ -112,31 +117,39 @@ export default function Dashboard() {
     setThreshold(next);
     setPage(1);
   };
+  const appliedThreshold = filterEnabled ? threshold : 0;
 
   useEffect(() => {
-    activeThresholdRef.current = threshold;
+    activeThresholdRef.current = appliedThreshold;
     setCurrentOddsData([]);
     setOldOddsData([]);
-    api
-      .getDashboard({ threshold })
-      .then((payload) => {
-        setCurrentOddsData(payload.rows ?? []);
-        setDisableOdds10mDeadline(Boolean(payload.disableOdds10mDeadline));
-      })
-      .catch(() => {});
-    api.getDashboardWebsites().then(setWebsiteOverview).catch(() => {});
-    const socket = createDashboardSocket((payload) => {
-      const payloadThreshold = Math.max(0, Number(payload?.threshold) || 0);
-      // Ignore late updates from an older socket subscription.
+    const applyPayload = (payload) => {
+      const payloadThreshold = Math.max(0, Number(payload?.threshold ?? appliedThreshold) || 0);
+      // Ignore late updates from an older threshold subscription.
       if (payloadThreshold !== activeThresholdRef.current) return;
       setCurrentOddsData((prevCurrent) => {
         setOldOddsData(prevCurrent);
         return payload.rows ?? [];
       });
       setDisableOdds10mDeadline(Boolean(payload.disableOdds10mDeadline));
-    }, threshold);
-    return () => socket.close();
-  }, [threshold]);
+    };
+
+    api
+      .getDashboard({ threshold: appliedThreshold })
+      .then(applyPayload)
+      .catch(() => {});
+    const pollId = window.setInterval(() => {
+      api.getDashboard({ threshold: appliedThreshold }).then(applyPayload).catch(() => {});
+    }, 5000);
+    api.getDashboardWebsites().then(setWebsiteOverview).catch(() => {});
+    const socket = createDashboardSocket((payload) => {
+      applyPayload(payload);
+    }, appliedThreshold);
+    return () => {
+      window.clearInterval(pollId);
+      socket.close();
+    };
+  }, [appliedThreshold]);
 
   useEffect(() => {
     const onKeyDown = (event) => {
@@ -161,6 +174,7 @@ export default function Dashboard() {
   }, [oldOddsData]);
 
   const filtered = useMemo(() => {
+    if (!filterEnabled) return currentOddsData;
     const q = filter.trim().toLowerCase();
     if (!q) return currentOddsData;
     return currentOddsData.filter((row) =>
@@ -169,11 +183,44 @@ export default function Dashboard() {
         .toLowerCase()
         .includes(q)
     );
-  }, [filter, currentOddsData]);
+  }, [filterEnabled, filter, currentOddsData]);
 
-  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const sorted = useMemo(() => {
+    if (!sortByArbitrageEnabled && !sortByRemainingEnabled) return filtered;
+    const list = [...filtered];
+    const dirArb = arbitrageOrder === "asc" ? 1 : -1;
+    const dirRemain = remainingOrder === "asc" ? 1 : -1;
+    const remainingSortValue = (row) => {
+      const t = new Date(row.start_time).getTime();
+      if (!Number.isFinite(t)) return Number.POSITIVE_INFINITY;
+      return t - nowMs;
+    };
+    list.sort((a, b) => {
+      if (sortByArbitrageEnabled) {
+        const arbA = Number(Number(a.arbitrage).toFixed(2));
+        const arbB = Number(Number(b.arbitrage).toFixed(2));
+        if (arbA !== arbB) return (arbA - arbB) * dirArb;
+      }
+      if (sortByRemainingEnabled) {
+        const remA = remainingSortValue(a);
+        const remB = remainingSortValue(b);
+        if (remA !== remB) return (remA - remB) * dirRemain;
+      }
+      return 0;
+    });
+    return list;
+  }, [
+    filtered,
+    sortByArbitrageEnabled,
+    sortByRemainingEnabled,
+    arbitrageOrder,
+    remainingOrder,
+    nowMs
+  ]);
+
+  const pageCount = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
   const safePage = Math.min(page, pageCount);
-  const pageRows = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const pageRows = sorted.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   return (
     <section>
@@ -217,9 +264,21 @@ export default function Dashboard() {
         {disableOdds10mDeadline ? "(all compared rows)" : "(last 10 minutes)"}
       </h2>
       <div className="row">
+        <label>
+          <input
+            type="checkbox"
+            checked={filterEnabled}
+            onChange={(event) => {
+              setFilterEnabled(event.target.checked);
+              setPage(1);
+            }}
+          />{" "}
+          Enable Filter
+        </label>
         <label>Filter:</label>
         <input
           placeholder="Filter matches/categories/urls"
+          disabled={!filterEnabled}
           value={filter}
           onChange={(event) => {
             setFilter(event.target.value);
@@ -232,6 +291,7 @@ export default function Dashboard() {
           min={0}
           step="0.01"
           placeholder="Threshold %"
+          disabled={!filterEnabled}
           value={thresholdInput}
           onChange={(event) => {
             setThresholdInput(event.target.value);
@@ -244,6 +304,52 @@ export default function Dashboard() {
           }}
           title="Show rows where comparison odd > baseline odd * (1 + threshold/100)"
         />
+        <label>Arbitrage:</label>
+        <label>
+          <input
+            type="checkbox"
+            checked={sortByArbitrageEnabled}
+            onChange={(event) => {
+              setSortByArbitrageEnabled(event.target.checked);
+              setPage(1);
+            }}
+          />{" "}
+          Sort
+        </label>
+        <select
+          disabled={!sortByArbitrageEnabled}
+          value={arbitrageOrder}
+          onChange={(event) => {
+            setArbitrageOrder(event.target.value);
+            setPage(1);
+          }}
+        >
+          <option value="desc">Desc</option>
+          <option value="asc">Asc</option>
+        </select>
+        <label>Remaining Time:</label>
+        <label>
+          <input
+            type="checkbox"
+            checked={sortByRemainingEnabled}
+            onChange={(event) => {
+              setSortByRemainingEnabled(event.target.checked);
+              setPage(1);
+            }}
+          />{" "}
+          Sort
+        </label>
+        <select
+          disabled={!sortByRemainingEnabled}
+          value={remainingOrder}
+          onChange={(event) => {
+            setRemainingOrder(event.target.value);
+            setPage(1);
+          }}
+        >
+          <option value="desc">Desc</option>
+          <option value="asc">Asc</option>
+        </select>
       </div>
       <table>
         <thead>
