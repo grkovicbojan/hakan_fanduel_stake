@@ -45,6 +45,19 @@ function groupMatchRows(rows) {
   return Array.from(map.entries());
 }
 
+function formatRemainingToStart(startTimeIso, nowMs) {
+  if (!startTimeIso) return "—";
+  const target = new Date(startTimeIso).getTime();
+  if (!Number.isFinite(target)) return "—";
+  const diffMs = target - nowMs;
+  if (diffMs <= 0) return "Started";
+  const totalSec = Math.floor(diffMs / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  return `${h}h ${String(m).padStart(2, "0")}m ${String(s).padStart(2, "0")}s`;
+}
+
 export default function Settings() {
   const [rows, setRows] = useState([]);
   const [stakeSyncWebsiteId, setStakeSyncWebsiteId] = useState("");
@@ -58,6 +71,7 @@ export default function Settings() {
   const [detailMatchUrl, setDetailMatchUrl] = useState(null);
   const [oddRows, setOddRows] = useState([]);
   const [oddLoading, setOddLoading] = useState(false);
+  const [nowMs, setNowMs] = useState(() => Date.now());
   const pollingInFlightRef = useRef(false);
 
   const refreshSettings = useCallback(() => api.getSettings().then(setRows).catch(() => {}), []);
@@ -100,6 +114,11 @@ export default function Settings() {
       window.clearInterval(id);
     };
   }, [reloadAll]);
+
+  useEffect(() => {
+    const id = window.setInterval(() => setNowMs(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
 
   useEffect(() => {
     if (!detailMatchUrl) {
@@ -331,6 +350,7 @@ export default function Settings() {
                   <th>Name</th>
                   <th>Detailed Match Url</th>
                   <th>ExtractedOddCount</th>
+                  <th>Remaining Time To Start</th>
                   <th>LastScraped</th>
                   <th>Status</th>
                 </tr>
@@ -352,6 +372,7 @@ export default function Settings() {
                         </button>
                       </td>
                       <td>{item.extracted_odd_count ?? 0}</td>
+                      <td>{formatRemainingToStart(item.start_time, nowMs)}</td>
                       <td>{ago === null ? "—" : `${ago}s ago`}</td>
                       <td>
                         <span className={ok ? "status-dot status-dot--ok" : "status-dot status-dot--stale"} />
