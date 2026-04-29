@@ -120,7 +120,11 @@ function dedupeByCanonicalMatchUrl(rows) {
         const nm = normalizeFinalMatchName(r.matchName);
         const prev = map.get(canon);
         if (!prev) {
-            map.set(canon, { matchUrl: canon, matchName: nm || "" });
+            map.set(canon, { matchUrl: canon, matchName: nm || "", startTime: normalizeStartTime(r.startTime) });
+            continue;
+        }
+        if (!prev.startTime) {
+            prev.startTime = normalizeStartTime(r.startTime);
         }
     }
     return [...map.values()];
@@ -182,7 +186,7 @@ function extractFromAnchors(html, siteUrl) {
                 .filter(Boolean)
                 .pop() || "event";
         const matchName = decodeURIComponent(segment.replace(/[-_]+/g, " ").slice(0, 120));
-        out.push({ matchName, matchUrl: abs });
+        out.push({ matchName, matchUrl: abs, startTime: null });
     }
     return out;
 }
@@ -219,23 +223,34 @@ function walkJsonForMatches(node, depth, siteUrl, out, stack) {
 
     let name;
     let url;
+    let startTime = null;
     for (const [k, v] of Object.entries(node)) {
-        if (typeof v !== "string") continue;
-        const t = v.trim();
-        if (!t) continue;
-        if (NAME_KEYS.has(k) && t.length > 1 && t.length < 220 && !/^https?:\/\//i.test(t)) {
-            if (!name || t.length > name.length) name = t;
-        }
-        if (URL_KEYS.has(k)) {
-            const abs = normalizePotentialMatchUrl(t, siteUrl);
-            if (abs && sameHost(abs, siteUrl) && !IGNORE_PATH.test(new URL(abs).pathname)) {
-                url = abs;
+        if (typeof v === "string") {
+            const t = v.trim();
+            if (!t) continue;
+            if (NAME_KEYS.has(k) && t.length > 1 && t.length < 220 && !/^https?:\/\//i.test(t)) {
+                if (!name || t.length > name.length) name = t;
             }
+            if (URL_KEYS.has(k)) {
+                const abs = normalizePotentialMatchUrl(t, siteUrl);
+                if (abs && sameHost(abs, siteUrl) && !IGNORE_PATH.test(new URL(abs).pathname)) {
+                    url = abs;
+                }
+            }
+            if (!startTime && /^(start(date|time)?|commence(time)?|eventdate|fixturedate|kickoff(time)?|date)$/i.test(k)) {
+                startTime = normalizeStartTime(t);
+            }
+        } else if (
+            !startTime &&
+            /^(start(date|time)?|commence(time)?|eventdate|fixturedate|kickoff(time)?|date)$/i.test(k) &&
+            (typeof v === "number" || typeof v === "bigint")
+        ) {
+            startTime = normalizeStartTime(String(v));
         }
     }
 
     if (name && url && !IGNORE_PATH.test(new URL(url).pathname)) {
-        out.push({ matchName: name, matchUrl: url });
+        out.push({ matchName: name, matchUrl: url, startTime });
     }
 
     if (typeof node === "object") {
@@ -287,9 +302,6 @@ export function extractFanduelSportbookDetails(html, websiteUrl) {
     const processLabels = (labels) => {
         let mainCategory = "";
         for (const label of labels) {
-            if (/\bunder\b/i.test(label)) {
-                continue;
-            }
             if (!label.includes(",")) {
                 if (isUsefulMainCategoryLabel(label)) {
                     mainCategory = normalizeMainCategory(label);
@@ -379,6 +391,13 @@ function parsePointsToken(token) {
     return `${formatLineNumber(n)}+Points`;
 }
 
+function parseSideToken(token) {
+    const m = String(token || "").match(/\b(Over|Under)\b/i);
+    if (!m) return "";
+    const side = m[1].toLowerCase();
+    return side === "under" ? "Under" : "Over";
+}
+
 function parseSelectionLabel(label, mainCategoryContext) {
     const parts = String(label || "")
         .split(",")
@@ -408,8 +427,9 @@ function parseSelectionLabel(label, mainCategoryContext) {
         const player = normalizeDetailToken(dashed[1]);
         const mainCategory = normalizeMainCategory(dashed[2]);
         const points = parsePointsToken(second);
-        if (!mainCategory || !points || !looksLikePlayerName(player)) return null;
-        return { category: `${mainCategory}${points}:${player}`, value };
+        const side = parseSideToken(second);
+        if (!mainCategory || !points || !side || !looksLikePlayerName(player)) return null;
+        return { category: `${mainCategory}-${side}-${points}:${player}`, value };
     }
 
     // Contextual form:
@@ -417,8 +437,9 @@ function parseSelectionLabel(label, mainCategoryContext) {
     const player = normalizeDetailToken(first);
     const mainCategory = normalizeMainCategory(mainCategoryContext);
     const points = parsePointsToken(second);
-    if (!mainCategory || !points || !looksLikePlayerName(player)) return null;
-    return { category: `${mainCategory}${points}:${player}`, value };
+    const side = parseSideToken(second);
+    if (!mainCategory || !points || !side || !looksLikePlayerName(player)) return null;
+    return { category: `${mainCategory}-${side}-${points}:${player}`, value };
 }
 
 
@@ -446,4 +467,19 @@ function looksLikePlayerName(s) {
     if (!s || s.length < 3 || s.length > 40) return false;
     if (/^(Over|Under|Yes|No|Home|Away)$/i.test(s)) return false;
     return /^[A-Za-z.'-]+$/.test(s);
+}
+
+function normalizeStartTime(raw) {
+    const t = String(raw || "").trim();
+    if (!t) return null;
+    if (/^\d+$/.test(t)) {
+        const n = Number(t);
+        if (!Number.isFinite(n) || n <= 0) return null;
+        const ms = n < 1e12 ? n * 1000 : n;
+        const d = new Date(ms);
+        return Number.isFinite(d.getTime()) ? d.toISOString() : null;
+    }
+    const d = new Date(t);
+    if (!Number.isFinite(d.getTime())) return null;
+    return d.toISOString();
 }

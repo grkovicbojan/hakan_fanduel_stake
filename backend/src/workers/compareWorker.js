@@ -42,7 +42,6 @@ async function handleExtractMainApi(task) {
     return [];
   }
   const matchInfos = await extractMatchFromAPI(websiteUrl);
-  console.log("matchInfos", matchInfos);
   const list = Array.isArray(matchInfos) ? matchInfos : [];
   await upsertScrapedInfo({
     url: websiteUrl,
@@ -82,7 +81,11 @@ async function handleExtractMain(task) {
 
   await replaceMatchWebsiteInfos(
     websiteUrl,
-    extractedMatches.map((item) => ({ name: item.matchName, url: item.matchUrl }))
+    extractedMatches.map((item) => ({
+      name: item.matchName,
+      url: item.matchUrl,
+      startTime: item.startTime || null
+    }))
   );
 
   const validNames = extractedMatches.map((item) => item.matchName);

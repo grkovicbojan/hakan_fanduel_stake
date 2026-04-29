@@ -8,6 +8,19 @@ function keyOf(row) {
   return `${row.name}|${row.baseline_match_url}|${row.comparison_match_url}|${row.category}`;
 }
 
+function formatRemainingToStart(startTimeIso, nowMs) {
+  if (!startTimeIso) return "—";
+  const target = new Date(startTimeIso).getTime();
+  if (!Number.isFinite(target)) return "—";
+  const diffMs = target - nowMs;
+  if (diffMs <= 0) return "Started";
+  const totalSec = Math.floor(diffMs / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  return `${h}h ${String(m).padStart(2, "0")}m ${String(s).padStart(2, "0")}s`;
+}
+
 /** 5–10 visible characters: strip https/http/www, prefer first hostname label, else host + path. */
 function shortSiteLabel(url) {
   const min = 5;
@@ -90,6 +103,7 @@ export default function Dashboard() {
   const [threshold, setThreshold] = useState(0);
   const [filter, setFilter] = useState("");
   const [page, setPage] = useState(1);
+  const [nowMs, setNowMs] = useState(() => Date.now());
 
   const applyThresholdFromInput = () => {
     const n = Number.parseFloat(thresholdInput);
@@ -131,6 +145,11 @@ export default function Dashboard() {
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
+  useEffect(() => {
+    const id = window.setInterval(() => setNowMs(Date.now()), 1000);
+    return () => window.clearInterval(id);
   }, []);
 
   const oldMap = useMemo(() => {
@@ -238,6 +257,7 @@ export default function Dashboard() {
             <th>BaselineTime</th>
             <th>ComparisonValue</th>
             <th>ComparisonTime</th>
+            <th>Remaining To Start</th>
             <th>Arbitrage(%)</th>
             <th>Timestamp</th>
           </tr>
@@ -257,6 +277,7 @@ export default function Dashboard() {
                 <td>{new Date(row.baseline_timestamp).toLocaleString()}</td>
                 <td>{Number(row.comparison_value).toFixed(2)}</td>
                 <td>{new Date(row.comparison_timestamp).toLocaleString()}</td>
+                <td>{formatRemainingToStart(row.start_time, nowMs)}</td>
                 <td>{Number(row.arbitrage).toFixed(4)}</td>
                 <td>{new Date(row.timestamp).toLocaleString()}</td>
               </tr>

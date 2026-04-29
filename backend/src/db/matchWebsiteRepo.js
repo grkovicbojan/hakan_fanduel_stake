@@ -25,17 +25,18 @@ export async function replaceMatchWebsiteInfos(website, rows) {
   const values = [];
   const placeholders = rows
     .map((row, index) => {
-      const base = index * 3;
-      values.push(website, row.name, row.url);
-      return `($${base + 1}, $${base + 2}, $${base + 3})`;
+      const base = index * 4;
+      values.push(website, row.name, row.url, row.startTime || null);
+      return `($${base + 1}, $${base + 2}, $${base + 3}, COALESCE($${base + 4}::timestamptz, NOW()))`;
     })
     .join(", ");
 
   await query(
-    `INSERT INTO match_website_infos (website, name, url)
+    `INSERT INTO match_website_infos (website, name, url, start_time)
      VALUES ${placeholders}
      ON CONFLICT (website, url) DO UPDATE
      SET name = EXCLUDED.name,
+         start_time = COALESCE(EXCLUDED.start_time, match_website_infos.start_time),
          timestamp = NOW()`,
     values
   );
@@ -43,7 +44,7 @@ export async function replaceMatchWebsiteInfos(website, rows) {
 
 export async function getMatchWebsiteInfosByWebsite(website) {
   const { rows } = await query(
-    `SELECT id, website, name, url, timestamp
+    `SELECT id, website, name, url, start_time, timestamp
      FROM match_website_infos
      WHERE website = $1
      ORDER BY name ASC, url ASC`,
@@ -60,6 +61,7 @@ export async function listAllMatchWebsiteInfosWithScrapeStats() {
        mwi.website,
        mwi.name,
        mwi.url,
+       mwi.start_time,
        mwi.timestamp,
        w.scrape_interval,
        si.timestamp AS last_scraped_at,

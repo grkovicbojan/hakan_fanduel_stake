@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS match_website_infos (
   website TEXT NOT NULL,
   name TEXT NOT NULL,
   url TEXT NOT NULL,
+  start_time TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   PRIMARY KEY (website, url)
 );
@@ -132,6 +133,10 @@ DROP TABLE IF EXISTS app_settings;
 
 ALTER TABLE website_infos ADD COLUMN IF NOT EXISTS scrape_type SMALLINT NOT NULL DEFAULT 0;
 ALTER TABLE website_infos ADD COLUMN IF NOT EXISTS api_keys TEXT NOT NULL DEFAULT '';
+ALTER TABLE match_website_infos ADD COLUMN IF NOT EXISTS start_time TIMESTAMPTZ;
+UPDATE match_website_infos SET start_time = COALESCE(start_time, NOW());
+ALTER TABLE match_website_infos ALTER COLUMN start_time SET DEFAULT NOW();
+ALTER TABLE match_website_infos ALTER COLUMN start_time SET NOT NULL;
 
 DO $$
 BEGIN

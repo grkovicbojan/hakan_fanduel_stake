@@ -42,7 +42,8 @@ export async function extractStakeSportbookMatches(websiteUrl) {
     }
     return data.fixtures.map((item) => ({
       matchName: normalizeFinalMatchName(item.name),
-      matchUrl: nbaFixtureUrlFromSlug(item.slug)
+      matchUrl: nbaFixtureUrlFromSlug(item.slug),
+      startTime: normalizeStartTime(item.startDate || item.startTime || item.commenceTime || item.date)
     }));
   } catch {
     logger.error("Stake odds-data: invalid JSON");
@@ -174,7 +175,7 @@ export function stakeSlugFromPageUrl(pageUrl) {
 
 /**
  * Maps Stake Odds Data API fixture JSON (docs-odds-data.stake.com) into odd_infos rows
- * aligned with FanDuel / legacy Stake category keys (e.g. ToScore19.5+Points:PlayerName).
+ * aligned with FanDuel / legacy Stake category keys.
  *
  * Primary source: `swishMarkets.playerProps[]` with outcomes `{ line, over, under }`.
  */
@@ -250,16 +251,19 @@ function normalizeDetailToken(s) {
         if (!o || typeof o !== "object") continue;
         const line = o.line;
         if (line == null || Number.isNaN(Number(line))) continue;
-        const over = Number(o.over);
-        if (!Number.isFinite(over) || over <= 1) continue;
-  
         const lineStr = formatLineNumber(Number(line));
-        const marketType = `${base}${lineStr}+Points`;
-        const category = `${marketType}:${player}`;
-        const key = `${category}|${over}`;
-        if (seen.has(key)) continue;
-        seen.add(key);
-        out.push({ url, category, value: over });
+        const marketType = `${base}`;
+        const pushOutcome = (side, oddValue) => {
+          const odd = Number(oddValue);
+          if (!Number.isFinite(odd) || odd <= 1) return;
+          const category = `${marketType}-${side}-${lineStr}+Points:${player}`;
+          const key = `${category}|${odd}`;
+          if (seen.has(key)) return;
+          seen.add(key);
+          out.push({ url, category, value: odd });
+        };
+        pushOutcome("Over", o.over);
+        pushOutcome("Under", o.under);
       }
     }
   
@@ -284,4 +288,19 @@ function normalizeDetailToken(s) {
     const teamB = s.slice(idx + 1).toLowerCase();
     if (!teamA || !teamB) return s.toLowerCase();
     return [teamA, teamB].sort((a, b) => a.localeCompare(b)).join("-");
+}
+
+function normalizeStartTime(raw) {
+  const t = String(raw || "").trim();
+  if (!t) return null;
+  if (/^\d+$/.test(t)) {
+    const n = Number(t);
+    if (!Number.isFinite(n) || n <= 0) return null;
+    const ms = n < 1e12 ? n * 1000 : n;
+    const d = new Date(ms);
+    return Number.isFinite(d.getTime()) ? d.toISOString() : null;
+  }
+  const d = new Date(t);
+  if (!Number.isFinite(d.getTime())) return null;
+  return d.toISOString();
 }

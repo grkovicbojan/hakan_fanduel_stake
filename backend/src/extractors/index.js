@@ -1,5 +1,5 @@
 /**
- * @typedef {{ matchName: string, matchUrl: string }} ExtractedMatch
+ * @typedef {{ matchName: string, matchUrl: string, startTime?: string | null }} ExtractedMatch
  */
 
 import { isStakeHostUrl } from "../lib/stakeHosts.js";
