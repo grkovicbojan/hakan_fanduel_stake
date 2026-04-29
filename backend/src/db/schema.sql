@@ -85,6 +85,7 @@ CREATE TABLE IF NOT EXISTS compared_infos (
   comparison_timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   arbitrage DOUBLE PRECISION NOT NULL,
   timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_time TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   PRIMARY KEY (name, baseline_match_url, comparison_match_url, category)
 );
 
@@ -137,6 +138,10 @@ ALTER TABLE match_website_infos ADD COLUMN IF NOT EXISTS start_time TIMESTAMPTZ;
 UPDATE match_website_infos SET start_time = COALESCE(start_time, NOW());
 ALTER TABLE match_website_infos ALTER COLUMN start_time SET DEFAULT NOW();
 ALTER TABLE match_website_infos ALTER COLUMN start_time SET NOT NULL;
+ALTER TABLE compared_infos ADD COLUMN IF NOT EXISTS updated_time TIMESTAMPTZ;
+UPDATE compared_infos SET updated_time = COALESCE(updated_time, timestamp);
+ALTER TABLE compared_infos ALTER COLUMN updated_time SET DEFAULT NOW();
+ALTER TABLE compared_infos ALTER COLUMN updated_time SET NOT NULL;
 
 DO $$
 BEGIN

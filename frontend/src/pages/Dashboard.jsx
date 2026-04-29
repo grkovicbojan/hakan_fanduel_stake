@@ -107,6 +107,8 @@ export default function Dashboard() {
   const [sortByRemainingEnabled, setSortByRemainingEnabled] = useState(true);
   const [arbitrageOrder, setArbitrageOrder] = useState("desc");
   const [remainingOrder, setRemainingOrder] = useState("desc");
+  const [newlyAddedMinutesInput, setNewlyAddedMinutesInput] = useState("10");
+  const [newlyAddedMinutes, setNewlyAddedMinutes] = useState(10);
   const [page, setPage] = useState(1);
   const [nowMs, setNowMs] = useState(() => Date.now());
 
@@ -115,6 +117,13 @@ export default function Dashboard() {
     const next = Number.isFinite(n) ? Math.max(0, n) : 0;
     setThresholdInput(String(next));
     setThreshold(next);
+    setPage(1);
+  };
+  const applyNewlyAddedMinutesFromInput = () => {
+    const n = Number.parseFloat(newlyAddedMinutesInput);
+    const next = Number.isFinite(n) ? Math.max(0, n) : 0;
+    setNewlyAddedMinutesInput(String(next));
+    setNewlyAddedMinutes(next);
     setPage(1);
   };
   const appliedThreshold = filterEnabled ? threshold : 0;
@@ -221,6 +230,11 @@ export default function Dashboard() {
   const pageCount = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
   const safePage = Math.min(page, pageCount);
   const pageRows = sorted.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const isNewlyAddedRow = (row) => {
+    const createdMs = new Date(row.timestamp).getTime();
+    if (!Number.isFinite(createdMs)) return false;
+    return nowMs - createdMs <= newlyAddedMinutes * 60 * 1000;
+  };
 
   return (
     <section>
@@ -304,6 +318,21 @@ export default function Dashboard() {
           }}
           title="Show rows where comparison odd > baseline odd * (1 + threshold/100)"
         />
+        <label>Newly Added Odd (minutes):</label>
+        <input
+          type="number"
+          min={0}
+          step="1"
+          value={newlyAddedMinutesInput}
+          onChange={(event) => setNewlyAddedMinutesInput(event.target.value)}
+          onBlur={applyNewlyAddedMinutesFromInput}
+          onKeyDown={(event) => {
+            if (event.key !== "Enter") return;
+            event.preventDefault();
+            applyNewlyAddedMinutesFromInput();
+          }}
+          title="Highlight rows created in last N minutes"
+        />
         <label>Arbitrage:</label>
         <label>
           <input
@@ -373,7 +402,10 @@ export default function Dashboard() {
             const previous = oldMap.get(keyOf(row));
             const up = previous == null ? true : row.arbitrage > previous;
             return (
-              <tr key={keyOf(row)}>
+              <tr
+                key={keyOf(row)}
+                style={isNewlyAddedRow(row) ? { backgroundColor: "rgba(255, 235, 120, 0.20)" } : undefined}
+              >
                 <td>{up ? "🔼" : "🔽"}</td>
                 <td>{row.name}</td>
                 <td><a href={row.baseline_match_url} target="_blank" rel="noopener noreferrer" style={{color: "#d6ecff"}}>Base Match Url</a></td>
