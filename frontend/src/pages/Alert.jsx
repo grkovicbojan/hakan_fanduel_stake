@@ -24,6 +24,7 @@ export default function Alert() {
   return (
     <section>
       <h2>Alerts</h2>
+      <div className="table-wrap">
       <table>
         <thead>
           <tr>
@@ -42,6 +43,7 @@ export default function Alert() {
           ))}
         </tbody>
       </table>
+      </div>
       <div className="row">
         <button type="button" disabled={safePage <= 1} onClick={() => setPage((p) => p - 1)}>
           Prev

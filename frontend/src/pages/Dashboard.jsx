@@ -292,7 +292,7 @@ export default function Dashboard() {
         Odds{" "}
         {disableOdds10mDeadline ? "(all compared rows)" : "(last 10 minutes)"}
       </h2>
-      <div className="row">
+      <div className="row dashboard-controls">
         <label>Arbitrage:</label>
         <label>
           <input
@@ -423,6 +423,7 @@ export default function Dashboard() {
         />
 
       </div>
+      <div className="table-wrap">
       <table>
         <thead>
           <tr>
@@ -465,6 +466,7 @@ export default function Dashboard() {
           })}
         </tbody>
       </table>
+      </div>
       <div className="row">
         <button type="button" disabled={safePage <= 1} onClick={() => setPage((p) => p - 1)}>
           Prev

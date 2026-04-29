@@ -7,6 +7,12 @@ body {
 
 .layout {
   padding: 16px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 header {
@@ -14,12 +20,22 @@ header {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 16px;
+  gap: 12px;
 }
 
 nav a {
   margin-right: 12px;
   color: #58a6ff;
   text-decoration: none;
+}
+
+nav a.active {
+  color: #f0f6fc;
+  text-decoration: underline;
+}
+
+main {
+  min-width: 0;
 }
 
 table {
@@ -41,6 +57,7 @@ td {
   gap: 10px;
   align-items: center;
   margin-top: 10px;
+  flex-wrap: wrap;
 }
 
 input,
@@ -53,6 +70,19 @@ button {
   display: grid;
   grid-template-columns: 1fr 80px 120px 120px 1fr auto;
   gap: 8px;
+}
+
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid #30363d;
+  border-radius: 8px;
+  margin-top: 12px;
+}
+
+.dashboard-controls > * {
+  flex: 0 0 auto;
 }
 
 pre {
@@ -298,4 +328,67 @@ span.status-dot {
 .status-dot--stale {
   background: #f85149;
   box-shadow: 0 0 6px rgba(248, 81, 73, 0.35);
+}
+
+@media (max-width: 1024px) {
+  .form-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .layout {
+    padding: 12px;
+  }
+
+  header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  nav a {
+    margin-right: 10px;
+    display: inline-block;
+    margin-bottom: 4px;
+  }
+
+  th,
+  td {
+    font-size: 11px;
+    padding: 6px;
+  }
+
+  h1 {
+    font-size: 20px;
+    margin: 0;
+  }
+
+  h2 {
+    font-size: 18px;
+  }
+
+  input,
+  select,
+  button,
+  textarea {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .dashboard-controls > label {
+    min-width: 100%;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-backdrop {
+    padding: 8px;
+  }
+
+  .modal-panel {
+    padding: 12px;
+  }
 }

@@ -281,6 +281,7 @@ export default function Settings() {
           Add
         </button>
       </div>
+      <div className="table-wrap">
       <table>
         <thead>
           <tr>
@@ -327,6 +328,7 @@ export default function Settings() {
           })}
         </tbody>
       </table>
+      </div>
 
       <h2>Match Info Based on Website</h2>
       <p className="muted small">
@@ -344,6 +346,7 @@ export default function Settings() {
             className={`match-website-group ${groupIdx % 2 === 1 ? "match-website-group--alt" : ""}`}
           >
             <div className="match-website-group__title">{website}</div>
+            <div className="table-wrap">
             <table>
               <thead>
                 <tr>
@@ -382,6 +385,7 @@ export default function Settings() {
                 })}
               </tbody>
             </table>
+            </div>
           </div>
         ))
       )}
@@ -478,6 +482,7 @@ export default function Settings() {
             {oddLoading ? (
               <p>Loading…</p>
             ) : oddRows.length > 0 ? (
+              <div className="table-wrap">
               <table>
                 <thead>
                   <tr>
@@ -496,6 +501,7 @@ export default function Settings() {
                   ))}
                 </tbody>
               </table>
+              </div>
             ) : (
               <p>No rows in odd_infos for this match URL yet.</p>
             )}
