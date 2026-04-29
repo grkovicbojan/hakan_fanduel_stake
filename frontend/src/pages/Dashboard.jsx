@@ -148,11 +148,11 @@ export default function Dashboard() {
     api
       .getDashboard({ threshold: appliedThreshold })
       .then(applyPayload)
-      .catch(() => {});
+      .catch(() => { });
     const pollId = window.setInterval(() => {
-      api.getDashboard({ threshold: appliedThreshold }).then(applyPayload).catch(() => {});
+      api.getDashboard({ threshold: appliedThreshold }).then(applyPayload).catch(() => { });
     }, 5000);
-    api.getDashboardWebsites().then(setWebsiteOverview).catch(() => {});
+    api.getDashboardWebsites().then(setWebsiteOverview).catch(() => { });
     const socket = createDashboardSocket((payload) => {
       applyPayload(payload);
     }, appliedThreshold);
@@ -293,61 +293,6 @@ export default function Dashboard() {
         {disableOdds10mDeadline ? "(all compared rows)" : "(last 10 minutes)"}
       </h2>
       <div className="row">
-        <label>
-          <input
-            type="checkbox"
-            checked={filterEnabled}
-            onChange={(event) => {
-              setFilterEnabled(event.target.checked);
-              setPage(1);
-            }}
-          />{" "}
-          Enable Filter
-        </label>
-        <label>Filter:</label>
-        <input
-          placeholder="Filter matches/categories/urls"
-          disabled={!filterEnabled}
-          value={filter}
-          onChange={(event) => {
-            setFilter(event.target.value);
-            setPage(1);
-          }}
-        />
-        <label>Threshold:</label>
-        <input
-          type="number"
-          min={0}
-          step="0.01"
-          placeholder="Threshold %"
-          disabled={!filterEnabled}
-          value={thresholdInput}
-          onChange={(event) => {
-            setThresholdInput(event.target.value);
-          }}
-          onBlur={applyThresholdFromInput}
-          onKeyDown={(event) => {
-            if (event.key !== "Enter") return;
-            event.preventDefault();
-            applyThresholdFromInput();
-          }}
-          title="Show rows where comparison odd > baseline odd * (1 + threshold/100)"
-        />
-        <label>Newly Added Odd (minutes):</label>
-        <input
-          type="number"
-          min={0}
-          step="1"
-          value={newlyAddedMinutesInput}
-          onChange={(event) => setNewlyAddedMinutesInput(event.target.value)}
-          onBlur={applyNewlyAddedMinutesFromInput}
-          onKeyDown={(event) => {
-            if (event.key !== "Enter") return;
-            event.preventDefault();
-            applyNewlyAddedMinutesFromInput();
-          }}
-          title="Highlight rows created in last N minutes"
-        />
         <label>Arbitrage:</label>
         <label>
           <input
@@ -371,6 +316,7 @@ export default function Dashboard() {
           <option value="desc">Desc</option>
           <option value="asc">Asc</option>
         </select>
+
         <label>Newly Added:</label>
         <label>
           <input
@@ -417,6 +363,65 @@ export default function Dashboard() {
           <option value="desc">Desc</option>
           <option value="asc">Asc</option>
         </select>
+
+        <label>
+          <input
+            type="checkbox"
+            checked={filterEnabled}
+            onChange={(event) => {
+              setFilterEnabled(event.target.checked);
+              setPage(1);
+            }}
+          />{" "}
+          Enable Filter
+        </label>
+        
+        <label>Threshold:</label>
+        <input
+          type="number"
+          min={0}
+          step="0.01"
+          placeholder="Threshold %"
+          disabled={!filterEnabled}
+          value={thresholdInput}
+          onChange={(event) => {
+            setThresholdInput(event.target.value);
+          }}
+          onBlur={applyThresholdFromInput}
+          onKeyDown={(event) => {
+            if (event.key !== "Enter") return;
+            event.preventDefault();
+            applyThresholdFromInput();
+          }}
+          title="Show rows where comparison odd > baseline odd * (1 + threshold/100)"
+        />
+        
+        <label>Newly Added Odd (minutes):</label>
+        <input
+          type="number"
+          min={0}
+          step="1"
+          value={newlyAddedMinutesInput}
+          onChange={(event) => setNewlyAddedMinutesInput(event.target.value)}
+          onBlur={applyNewlyAddedMinutesFromInput}
+          onKeyDown={(event) => {
+            if (event.key !== "Enter") return;
+            event.preventDefault();
+            applyNewlyAddedMinutesFromInput();
+          }}
+          title="Highlight rows created in last N minutes"
+        />
+        <label>Text:</label>
+        <input
+          placeholder="Filter matches/categories/urls"
+          disabled={!filterEnabled}
+          value={filter}
+          onChange={(event) => {
+            setFilter(event.target.value);
+            setPage(1);
+          }}
+        />
+
       </div>
       <table>
         <thead>
@@ -426,13 +431,13 @@ export default function Dashboard() {
             <th>BaselineMatchUrl</th>
             <th>ComparisonMatchUrl</th>
             <th>Category</th>
-            <th>BaselineValue</th>
-            <th>BaselineTime</th>
-            <th>ComparisonValue</th>
-            <th>ComparisonTime</th>
-            <th>Remaining To Start</th>
             <th>Arbitrage(%)</th>
-            <th>Timestamp</th>
+            <th>Remaining To Start</th>
+            <th>BaselineValue</th>
+            <th>ComparisonValue</th>
+            <th>BaselineTime</th>
+            <th>ComparisonTime</th>
+            <th>CreatedAt</th>
           </tr>
         </thead>
         <tbody>
@@ -446,15 +451,14 @@ export default function Dashboard() {
               >
                 <td>{up ? "🔼" : "🔽"}</td>
                 <td>{row.name}</td>
-                <td><a href={row.baseline_match_url} target="_blank" rel="noopener noreferrer" style={{color: "#d6ecff"}}>Base Match Url</a></td>
-                <td><a href={row.comparison_match_url} target="_blank" rel="noopener noreferrer" style={{color: "#d6ecff"}}>Compared Match Url</a></td>
+                <td><a href={row.baseline_match_url} target="_blank" rel="noopener noreferrer" style={{ color: "#d6ecff" }}>Base Match Url</a></td>
+                <td><a href={row.comparison_match_url} target="_blank" rel="noopener noreferrer" style={{ color: "#d6ecff" }}>Compared Match Url</a></td>
                 <td>{row.category}</td>
-                <td>{Number(row.baseline_value).toFixed(2)}</td>
+                <td>{Number(row.arbitrage).toFixed(4)}</td>
+                <td>{formatRemainingToStart(row.start_time, nowMs)}</td>                <td>{Number(row.baseline_value).toFixed(2)}</td>
                 <td>{new Date(row.baseline_timestamp).toLocaleString()}</td>
                 <td>{Number(row.comparison_value).toFixed(2)}</td>
                 <td>{new Date(row.comparison_timestamp).toLocaleString()}</td>
-                <td>{formatRemainingToStart(row.start_time, nowMs)}</td>
-                <td>{Number(row.arbitrage).toFixed(4)}</td>
                 <td>{new Date(row.timestamp).toLocaleString()}</td>
               </tr>
             );
