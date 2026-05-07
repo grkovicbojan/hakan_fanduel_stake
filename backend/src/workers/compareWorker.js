@@ -65,6 +65,8 @@ async function handleExtractMain(task) {
     extractedMatches = await handleExtractMainApi(task);
   }
 
+  logger.info("extractedMatches before filter", extractedMatches);
+
   extractedMatches = extractedMatches.filter((item) => item.startTime && new Date(item.startTime) > new Date(Date.now()));
 
   if (!websiteScrape && !websiteApi) {
@@ -79,7 +81,7 @@ async function handleExtractMain(task) {
     return;
   }
 
-  console.log("extractedMatches", extractedMatches);
+  logger.info("extractedMatches", extractedMatches);
 
   await replaceMatchWebsiteInfos(
     websiteUrl,
