@@ -67,7 +67,7 @@ async function handleExtractMain(task) {
 
   logger.info("extractedMatches before filter", extractedMatches);
 
-  extractedMatches = extractedMatches.filter((item) => item.startTime && new Date(item.startTime) > new Date(Date.now()));
+  extractedMatches = extractedMatches.filter((item) => !item.startTime || new Date(item.startTime) > new Date(Date.now()));
 
   if (!websiteScrape && !websiteApi) {
     logger.warn("EXTRACT_MAIN skipped: no website_infos row for this URL.", { websiteUrl });
