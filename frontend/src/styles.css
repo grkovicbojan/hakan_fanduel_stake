@@ -97,12 +97,21 @@ main {
   gap: 12px;
 }
 
+.site-logo-link {
+  flex-shrink: 0;
+  line-height: 0;
+}
+
+.site-logo-link:hover .site-logo {
+  opacity: 0.9;
+}
+
 .site-logo {
   width: 44px;
   height: 44px;
-  border-radius: 8px;
-  object-fit: cover;
-  flex-shrink: 0;
+  border-radius: 10px;
+  object-fit: contain;
+  display: block;
 }
 
 .site-brand-text {

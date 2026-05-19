@@ -40,13 +40,9 @@ export default function SiteLayout() {
     <div className="layout">
       <header className="site-header">
         <div className="site-brand">
-          <img
-            src="/images/hero-sports.svg"
-            alt=""
-            className="site-logo"
-            width={44}
-            height={44}
-          />
+          <NavLink to="/" end className="site-logo-link" aria-label="Home">
+            <img src="/images/site-logo.svg" alt="" className="site-logo" width={44} height={44} />
+          </NavLink>
           <div className="site-brand-text">
             <NavLink to="/" className="site-title-link">
               SportBet Odds Comparator

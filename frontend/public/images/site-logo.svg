@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="SportBet Odds Comparator">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0ea5e9"/>
+      <stop offset="100%" stop-color="#0369a1"/>
+    </linearGradient>
+  </defs>
+  <rect width="48" height="48" rx="11" fill="url(#bg)"/>
+  <path d="M10 32 L18 24 L26 28 L38 14" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="18" cy="24" r="2.5" fill="#bbf7d0"/>
+  <circle cx="26" cy="28" r="2.5" fill="#bbf7d0"/>
+  <circle cx="38" cy="14" r="2.5" fill="#fef08a"/>
+  <path d="M32 14 H38 V20" fill="none" stroke="#fef08a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
