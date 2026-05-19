@@ -22,7 +22,7 @@ export default function Alert() {
   const safePage = Math.min(page, pageCount);
 
   return (
-    <section>
+    <section className="tool-page">
       <h2>Alerts</h2>
       <div className="table-wrap">
       <table>

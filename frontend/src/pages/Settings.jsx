@@ -196,7 +196,7 @@ export default function Settings() {
   };
 
   return (
-    <section>
+    <section className="tool-page">
       <h2>Stake Odds Data API</h2>
       <p className="muted small">
         Per website below: set <strong>Scrape type</strong> to API for Stake rows that should use{" "}

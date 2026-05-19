@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Allow: /about
+Allow: /how-it-works
+Allow: /privacy
+Allow: /terms
+Allow: /contact
+
+Sitemap: https://weienwong.online/sitemap.xml

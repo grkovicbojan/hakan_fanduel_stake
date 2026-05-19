@@ -252,7 +252,7 @@ export default function Dashboard() {
   };
 
   return (
-    <section>
+    <section className="tool-page">
       <h2>Configured websites</h2>
       {websiteOverview == null ? (
         <p className="muted">Loading website overview…</p>
@@ -448,12 +448,12 @@ export default function Dashboard() {
             return (
               <tr
                 key={keyOf(row)}
-                style={isNewlyAddedRow(row) ? { backgroundColor: "rgba(255, 235, 120, 0.20)" } : undefined}
+                className={isNewlyAddedRow(row) ? "row-newly-added" : undefined}
               >
                 <td>{up ? "🔼" : "🔽"}</td>
                 <td>{row.name}</td>
-                <td><a href={row.baseline_match_url} target="_blank" rel="noopener noreferrer" style={{ color: "#d6ecff" }}>Base Match Url</a></td>
-                <td><a href={row.comparison_match_url} target="_blank" rel="noopener noreferrer" style={{ color: "#d6ecff" }}>Compared Match Url</a></td>
+                <td><a className="table-link" href={row.baseline_match_url} target="_blank" rel="noopener noreferrer">Base Match Url</a></td>
+                <td><a className="table-link" href={row.comparison_match_url} target="_blank" rel="noopener noreferrer">Compared Match Url</a></td>
                 <td>{row.category}</td>
                 <td>{Number(row.arbitrage).toFixed(4)}</td>
                 <td>{formatRemainingToStart(row.start_time, nowMs)}</td>                <td>{Number(row.baseline_value).toFixed(2)}</td>
