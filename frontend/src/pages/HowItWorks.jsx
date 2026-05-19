@@ -53,9 +53,29 @@ export default function HowItWorks() {
         accuracy of third-party feeds.
       </p>
 
+      <h2>Glossary (quick reference)</h2>
+      <ul>
+        <li>
+          <strong>Vig (juice):</strong> Bookmaker margin embedded in prices; makes implied
+          probabilities sum above 100% on both sides.
+        </li>
+        <li>
+          <strong>Strike:</strong> The line value in a prop (e.g. 22.5 points).
+        </li>
+        <li>
+          <strong>Stale line:</strong> A price that has not yet reacted to news compared with
+          another source.
+        </li>
+        <li>
+          <strong>Category match:</strong> Same player, stat, direction, and strike before
+          comparing values.
+        </li>
+      </ul>
+
       <h2>Next steps</h2>
       <p>
-        Read our <a href="/about">About</a> page for editorial standards, or open the{" "}
+        Read our <a href="/guides">research guides</a> for longer articles, the{" "}
+        <a href="/about">About</a> page for editorial standards, or open the{" "}
         <a href="/dashboard">odds dashboard</a> if you already operate a configured data
         environment. For privacy questions, see <a href="/privacy">Privacy Policy</a>.
       </p>

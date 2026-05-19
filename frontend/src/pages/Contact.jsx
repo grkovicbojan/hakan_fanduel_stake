@@ -12,10 +12,6 @@ export default function Contact() {
       <p>
         <a href="mailto:contact@weienwong.online">contact@weienwong.online</a>
       </p>
-      <p className="muted small">
-        Replace this address with your active inbox before publishing if you use a different
-        mailbox.
-      </p>
 
       <h2>Response time</h2>
       <p>

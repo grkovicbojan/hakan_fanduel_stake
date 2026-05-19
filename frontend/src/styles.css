@@ -356,6 +356,54 @@ main {
   color: var(--link);
 }
 
+.content-prose code {
+  font-size: 0.9em;
+  padding: 2px 6px;
+  background: var(--bg-muted);
+  border-radius: 4px;
+}
+
+.content-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 28px 0;
+}
+
+.guide-list {
+  list-style: none;
+  margin: 20px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.guide-card {
+  padding: 18px 20px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+}
+
+.guide-card h2 {
+  margin: 0 0 8px;
+  font-size: 1.1rem;
+}
+
+.guide-card h2 a {
+  text-decoration: none;
+  color: var(--text);
+}
+
+.guide-card h2 a:hover {
+  color: var(--primary-dark);
+}
+
+.guide-card p {
+  margin: 0 0 8px;
+}
+
 .content-figure {
   margin: 20px 0;
   max-width: 100%;

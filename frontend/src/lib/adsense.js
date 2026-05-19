@@ -2,10 +2,19 @@
 export const ADSENSE_CLIENT = "ca-pub-3940185689979323";
 export const ADSENSE_SLOT = "2649405178";
 
-const CONTENT_ROUTES = new Set(["/", "/about", "/how-it-works", "/privacy", "/terms", "/contact"]);
+const CONTENT_ROUTES = new Set([
+  "/",
+  "/about",
+  "/how-it-works",
+  "/guides",
+  "/privacy",
+  "/terms",
+  "/contact"
+]);
 
 export function isAdSenseContentRoute(pathname) {
-  return CONTENT_ROUTES.has(pathname);
+  if (CONTENT_ROUTES.has(pathname)) return true;
+  return pathname.startsWith("/guides/");
 }
 
 let scriptLoading = null;

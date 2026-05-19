@@ -12,11 +12,14 @@ export default function Home() {
           "Learn how betting markets are structured, how line movements are observed, and how to compare prices across sources—without wagering on this site.",
         actions: (
           <>
-            <Link to="/how-it-works" className="btn btn-primary">
+            <Link to="/guides" className="btn btn-primary">
+              Read guides
+            </Link>
+            <Link to="/how-it-works" className="btn btn-secondary">
               How it works
             </Link>
             <Link to="/dashboard" className="btn btn-secondary">
-              Open odds dashboard
+              Dashboard
             </Link>
           </>
         )
@@ -94,8 +97,19 @@ export default function Home() {
         or equivalent services in your country.
       </p>
 
+      <h2>Research guides</h2>
+      <p>
+        In-depth articles on odds formats, implied probability, arbitrage research pitfalls,
+        player props, and responsible gambling. Start with the{" "}
+        <Link to="/guides">guides index</Link> or jump to{" "}
+        <Link to="/guides/odds-formats">odds formats explained</Link>.
+      </p>
+
       <h2>Explore the site</h2>
       <ul>
+        <li>
+          <Link to="/guides">Guides</Link> — five long-form educational articles
+        </li>
         <li>
           <Link to="/how-it-works">How it works</Link> — methodology and glossary
         </li>

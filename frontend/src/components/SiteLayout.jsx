@@ -3,11 +3,13 @@ import { useEffect } from "react";
 import AdSenseUnit from "./AdSenseUnit.jsx";
 import MobileNav from "./MobileNav.jsx";
 import { isAdSenseContentRoute } from "../lib/adsense.js";
+import { guideBySlug } from "../content/guides.js";
 
 const PAGE_TITLES = {
   "/": "Home | SportBet Odds Comparator",
   "/about": "About | SportBet Odds Comparator",
   "/how-it-works": "How It Works | SportBet Odds Comparator",
+  "/guides": "Guides | SportBet Odds Comparator",
   "/privacy": "Privacy Policy | SportBet Odds Comparator",
   "/terms": "Terms of Use | SportBet Odds Comparator",
   "/contact": "Contact | SportBet Odds Comparator",
@@ -16,12 +18,22 @@ const PAGE_TITLES = {
   "/alert": "Alerts | SportBet Odds Comparator"
 };
 
+function titleForPath(pathname) {
+  if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname];
+  const guideMatch = pathname.match(/^\/guides\/([^/]+)$/);
+  if (guideMatch) {
+    const g = guideBySlug(guideMatch[1]);
+    if (g) return `${g.title} | SportBet Odds Comparator`;
+  }
+  return "SportBet Odds Comparator";
+}
+
 export default function SiteLayout() {
   const { pathname } = useLocation();
   const isToolRoute = !isAdSenseContentRoute(pathname);
 
   useEffect(() => {
-    document.title = PAGE_TITLES[pathname] || "SportBet Odds Comparator";
+    document.title = titleForPath(pathname);
   }, [pathname]);
 
   return (
@@ -48,6 +60,7 @@ export default function SiteLayout() {
           <NavLink to="/" end>
             Home
           </NavLink>
+          <NavLink to="/guides">Guides</NavLink>
           <NavLink to="/how-it-works">How it works</NavLink>
           <NavLink to="/about">About</NavLink>
           <NavLink to="/dashboard">Odds dashboard</NavLink>
@@ -77,6 +90,7 @@ export default function SiteLayout() {
 
       <footer className="site-footer">
         <nav className="footer-nav" aria-label="Legal">
+          <NavLink to="/guides">Guides</NavLink>
           <NavLink to="/privacy">Privacy Policy</NavLink>
           <NavLink to="/terms">Terms of Use</NavLink>
           <NavLink to="/contact">Contact</NavLink>

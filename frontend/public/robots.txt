@@ -1,5 +1,7 @@
 User-agent: *
 Allow: /
+Allow: /guides
+Allow: /guides/
 Allow: /about
 Allow: /how-it-works
 Allow: /privacy

@@ -25,6 +25,9 @@ export default function MobileNav() {
           <NavLink to="/" end onClick={close}>
             Home
           </NavLink>
+          <NavLink to="/guides" onClick={close}>
+            Guides
+          </NavLink>
           <NavLink to="/how-it-works" onClick={close}>
             How it works
           </NavLink>

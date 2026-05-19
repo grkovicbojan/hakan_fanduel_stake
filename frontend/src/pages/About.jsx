@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import ContentPage from "../components/ContentPage.jsx";
 
 export default function About() {
@@ -28,6 +29,24 @@ export default function About() {
         <li>We do not publish “sure win” tips, fixed picks, or guaranteed profit claims.</li>
         <li>We update pages when methodology or legal requirements change.</li>
       </ul>
+
+      <h2>Who this site is for</h2>
+      <p>
+        Readers learning how sports markets are quoted, students of probability and statistics,
+        and analysts building private datasets may find our guides useful. We do not target
+        casual bettors seeking picks. If you are new, start with the{" "}
+        <Link to="/guides/odds-formats">odds formats guide</Link> and{" "}
+        <Link to="/guides/implied-probability">implied probability article</Link>.
+      </p>
+
+      <h2>Content updates</h2>
+      <p>
+        We add and revise articles when methodology changes. The{" "}
+        <Link to="/guides">guides section</Link> is the primary home for long-form material;
+        shorter summaries appear on <Link to="/how-it-works">How it works</Link>. Tool pages
+        (dashboard, settings, alerts) document behavior but are not substitutes for editorial
+        content.
+      </p>
 
       <h2>Technology</h2>
       <p>
