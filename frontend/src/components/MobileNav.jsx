@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
-import { isAdSenseContentRoute } from "../lib/adsense.js";
+import { isContentRoute } from "../lib/siteMeta.js";
 
 export default function MobileNav() {
   const [open, setOpen] = useState(false);
   const { pathname } = useLocation();
-  const isToolRoute = !isAdSenseContentRoute(pathname);
+  const isToolRoute = !isContentRoute(pathname);
 
   const close = () => setOpen(false);
 
@@ -28,17 +28,27 @@ export default function MobileNav() {
           <NavLink to="/guides" onClick={close}>
             Guides
           </NavLink>
+          <NavLink to="/glossary" onClick={close}>
+            Glossary
+          </NavLink>
           <NavLink to="/how-it-works" onClick={close}>
             How it works
           </NavLink>
           <NavLink to="/about" onClick={close}>
             About
           </NavLink>
-          <NavLink to="/dashboard" onClick={close}>
-            Odds dashboard
+          <NavLink to="/faq" onClick={close}>
+            FAQ
+          </NavLink>
+          <NavLink to="/contact" onClick={close}>
+            Contact
           </NavLink>
           {isToolRoute ? (
             <>
+              <span className="mobile-nav-divider">Research tools</span>
+              <NavLink to="/dashboard" onClick={close}>
+                Dashboard
+              </NavLink>
               <NavLink to="/settings" onClick={close}>
                 Settings
               </NavLink>
@@ -46,10 +56,11 @@ export default function MobileNav() {
                 Alerts
               </NavLink>
             </>
-          ) : null}
-          <NavLink to="/contact" onClick={close}>
-            Contact
-          </NavLink>
+          ) : (
+            <NavLink to="/dashboard" onClick={close} className="mobile-nav-tools-link">
+              Research tools
+            </NavLink>
+          )}
         </nav>
       ) : null}
     </div>

@@ -1,136 +1,132 @@
 import { Link } from "react-router-dom";
 import ContentPage from "../components/ContentPage.jsx";
+import JsonLd from "../components/JsonLd.jsx";
+import { GUIDES } from "../content/guides.js";
+
+const FEATURED_SLUGS = [
+  "odds-formats",
+  "implied-probability",
+  "moneyline-and-spreads",
+  "responsible-gambling"
+];
 
 export default function Home() {
+  const featured = FEATURED_SLUGS.map((slug) => GUIDES.find((g) => g.slug === slug)).filter(Boolean);
+
   return (
-    <ContentPage
-      title="Sports odds comparison for research and analysis"
-      hero={{
-        image: "/images/hero-sports.svg",
-        imageAlt: "Illustration of sports analytics and odds research",
-        lead:
-          "Learn how betting markets are structured, how line movements are observed, and how to compare prices across sources—without wagering on this site.",
-        actions: (
-          <>
-            <Link to="/guides" className="btn btn-primary">
-              Read guides
-            </Link>
-            <Link to="/how-it-works" className="btn btn-secondary">
-              How it works
-            </Link>
-            <Link to="/dashboard" className="btn btn-secondary">
-              Dashboard
-            </Link>
-          </>
-        )
-      }}
-    >
-      <section className="feature-grid" aria-label="Site highlights">
-        <article className="feature-card">
-          <img src="/images/feature-education.svg" alt="" width={320} height={200} />
-          <div className="feature-card__body">
-            <h3>Educational content</h3>
-            <p>
-              Guides on odds formats, implied probability, and market categories—written for
-              researchers, not promoters.
-            </p>
-          </div>
-        </article>
-        <article className="feature-card">
-          <img src="/images/feature-dashboard.svg" alt="" width={320} height={200} />
-          <div className="feature-card__body">
-            <h3>Live comparison tool</h3>
-            <p>
-              Optional dashboard to monitor structured odds snapshots from your own data
-              workflows.
-            </p>
-          </div>
-        </article>
-        <article className="feature-card">
-          <img src="/images/feature-responsible.svg" alt="" width={320} height={200} />
-          <div className="feature-card__body">
-            <h3>Responsible use</h3>
-            <p>
-              We do not accept bets or process wagering payments. Use regulated operators only
-              where legal.
-            </p>
-          </div>
-        </article>
-      </section>
+    <>
+      <JsonLd
+        data={{
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          name: "SportBet Odds Comparator",
+          url: "https://weienwong.online/",
+          description:
+            "Educational guides on sports market structure, odds formats, and research methodology.",
+          publisher: {
+            "@type": "Organization",
+            name: "SportBet Odds Comparator",
+            url: "https://weienwong.online/"
+          }
+        }}
+      />
+      <ContentPage
+        title="Sports market research and odds education"
+        showTopAd={false}
+        hero={{
+          image: "/images/feature-education.svg",
+          imageAlt: "Educational guides on sports market research",
+          lead:
+            "Independent articles on how posted prices work, how to read odds formats, and how to evaluate data quality—written for students of probability and market structure, not for wagering on this site.",
+          actions: (
+            <>
+              <Link to="/guides" className="btn btn-primary">
+                Browse all guides
+              </Link>
+              <Link to="/glossary" className="btn btn-secondary">
+                Glossary
+              </Link>
+            </>
+          )
+        }}
+      >
+        <section className="featured-guides" aria-labelledby="featured-heading">
+          <h2 id="featured-heading">Featured articles</h2>
+          <ul className="guide-list">
+            {featured.map((guide) => (
+              <li key={guide.slug} className="guide-card">
+                <h3>
+                  <Link to={guide.path}>{guide.title}</Link>
+                </h3>
+                <p>{guide.summary}</p>
+                <p className="muted small">
+                  ~{guide.readMinutes} min read · <Link to={guide.path}>Read article</Link>
+                </p>
+              </li>
+            ))}
+          </ul>
+          <p>
+            <Link to="/guides">View all {GUIDES.length} guides</Link> ·{" "}
+            <Link to="/faq">FAQ</Link>
+          </p>
+        </section>
 
-      <p>
-        SportBet Odds Comparator is an informational website that explains how sports betting
-        markets are structured and how line movements can be observed across different data
-        sources. Our goal is to help readers understand comparison methodology, market
-        terminology, and the factors that influence posted prices—not to encourage wagering or
-        guarantee outcomes.
-      </p>
+        <h2>Who this site is for</h2>
+        <p>
+          Readers learning statistics and market mechanics: how sportsbooks quote prices, why
+          implied probabilities exceed 100%, and how to compare sources without fooling yourself
+          with stale or mismatched data. We publish original explanations—not affiliate funnels or
+          pick-selling services.
+        </p>
 
-      <h2>What you will find on this site</h2>
-      <p>
-        We publish educational material about odds formats, implied probability, and how
-        operators publish prices for player and team markets. Separately, we provide an optional
-        odds dashboard for users who already collect data through their own workflows. The
-        dashboard is a monitoring tool; it is not a substitute for licensed financial or legal
-        advice in your jurisdiction.
-      </p>
+        <h2>What we publish</h2>
+        <ul>
+          <li>
+            <Link to="/guides">Research guides</Link> — long-form tutorials (odds formats, vig,
+            player props, ethics, line movement)
+          </li>
+          <li>
+            <Link to="/glossary">Glossary</Link> — definitions of common terms
+          </li>
+          <li>
+            <Link to="/how-it-works">How it works</Link> — comparison methodology overview
+          </li>
+          <li>
+            <Link to="/about">About</Link> — editorial standards and mission
+          </li>
+        </ul>
 
-      <h2>Educational focus</h2>
-      <p>
-        Sportsbooks display prices that reflect supply, demand, injury news, and market sentiment.
-        When two sources show different numbers for a similar market, the gap is often expressed
-        as a percentage difference. Learning to read that difference carefully—while accounting
-        for market type, timing, and limits—is a core skill for quantitative sports research.
-        Our <Link to="/how-it-works">How it works</Link> page walks through these concepts in
-        plain language.
-      </p>
+        <h2>What we do not do</h2>
+        <ul>
+          <li>Accept bets or process wagering payments</li>
+          <li>Sell picks, parlays, or guaranteed-profit systems</li>
+          <li>Promote sign-ups at gambling operators for commission</li>
+        </ul>
 
-      <h2>Responsible use</h2>
-      <p>
-        Gambling involves financial risk and may be illegal where you live. This website does not
-        accept bets, process payments for wagering, or operate as a bookmaker. If you choose to
-        engage with regulated operators, do so only where permitted by law and within personal
-        limits. If you need support, contact organizations such as{" "}
-        <a href="https://www.begambleaware.org/" target="_blank" rel="noopener noreferrer">
-          BeGambleAware
-        </a>{" "}
-        or equivalent services in your country.
-      </p>
+        <h2>Optional research tools</h2>
+        <p>
+          A separate <Link to="/dashboard">data monitoring area</Link> exists for users who run
+          their own configured pipelines. It is not the main purpose of this site, does not carry
+          display advertisements, and is not required to read our articles.
+        </p>
 
-      <h2>Research guides</h2>
-      <p>
-        In-depth articles on odds formats, implied probability, arbitrage research pitfalls,
-        player props, and responsible gambling. Start with the{" "}
-        <Link to="/guides">guides index</Link> or jump to{" "}
-        <Link to="/guides/odds-formats">odds formats explained</Link>.
-      </p>
+        <h2>Responsible use</h2>
+        <p>
+          Gambling involves financial risk and may be illegal where you live. If you need help,
+          see our{" "}
+          <Link to="/guides/responsible-gambling">responsible gambling guide</Link> and resources
+          such as{" "}
+          <a href="https://www.begambleaware.org/" target="_blank" rel="noopener noreferrer">
+            BeGambleAware
+          </a>
+          .
+        </p>
 
-      <h2>Explore the site</h2>
-      <ul>
-        <li>
-          <Link to="/guides">Guides</Link> — five long-form educational articles
-        </li>
-        <li>
-          <Link to="/how-it-works">How it works</Link> — methodology and glossary
-        </li>
-        <li>
-          <Link to="/about">About</Link> — mission and editorial standards
-        </li>
-        <li>
-          <Link to="/dashboard">Odds dashboard</Link> — live comparison tool (no ads on tool pages)
-        </li>
-        <li>
-          <Link to="/privacy">Privacy Policy</Link> — how we handle data
-        </li>
-        <li>
-          <Link to="/contact">Contact</Link> — questions and feedback
-        </li>
-      </ul>
-
-      <p className="muted small">
-        Last updated:{" "}
-        {new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
-      </p>
-    </ContentPage>
+        <p className="muted small">
+          Last reviewed:{" "}
+          {new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}
+        </p>
+      </ContentPage>
+    </>
   );
 }

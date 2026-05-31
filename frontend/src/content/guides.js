@@ -39,6 +39,30 @@ export const GUIDES = [
     summary:
       "Risk limits, self-exclusion resources, and why this site does not accept wagers.",
     readMinutes: 6
+  },
+  {
+    slug: "moneyline-and-spreads",
+    path: "/guides/moneyline-and-spreads",
+    title: "Moneyline, spreads, and game totals explained",
+    summary:
+      "Core team-level markets, how handicaps work, and what researchers compare across books.",
+    readMinutes: 9
+  },
+  {
+    slug: "line-movement",
+    path: "/guides/line-movement",
+    title: "Understanding line movement and closing lines",
+    summary:
+      "Why prices change before kickoff, steam moves, and how timing affects comparisons.",
+    readMinutes: 8
+  },
+  {
+    slug: "research-ethics",
+    path: "/guides/research-ethics",
+    title: "Ethics, terms of service, and lawful data collection",
+    summary:
+      "Respecting operator rules, geo restrictions, and using data only where permitted.",
+    readMinutes: 7
   }
 ];
 

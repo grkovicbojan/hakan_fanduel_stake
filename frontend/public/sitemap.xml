@@ -1,12 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://weienwong.online/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
-  <url><loc>https://weienwong.online/guides</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://weienwong.online/guides</loc><changefreq>weekly</changefreq><priority>0.95</priority></url>
   <url><loc>https://weienwong.online/guides/odds-formats</loc><changefreq>monthly</changefreq><priority>0.85</priority></url>
   <url><loc>https://weienwong.online/guides/implied-probability</loc><changefreq>monthly</changefreq><priority>0.85</priority></url>
   <url><loc>https://weienwong.online/guides/arbitrage-research</loc><changefreq>monthly</changefreq><priority>0.85</priority></url>
   <url><loc>https://weienwong.online/guides/player-props</loc><changefreq>monthly</changefreq><priority>0.85</priority></url>
   <url><loc>https://weienwong.online/guides/responsible-gambling</loc><changefreq>monthly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://weienwong.online/guides/moneyline-and-spreads</loc><changefreq>monthly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://weienwong.online/guides/line-movement</loc><changefreq>monthly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://weienwong.online/guides/research-ethics</loc><changefreq>monthly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://weienwong.online/glossary</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://weienwong.online/faq</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://weienwong.online/about</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://weienwong.online/how-it-works</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://weienwong.online/privacy</loc><changefreq>yearly</changefreq><priority>0.5</priority></url>

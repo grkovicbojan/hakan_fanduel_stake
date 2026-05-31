@@ -2,10 +2,15 @@ User-agent: *
 Allow: /
 Allow: /guides
 Allow: /guides/
+Allow: /glossary
+Allow: /faq
 Allow: /about
 Allow: /how-it-works
 Allow: /privacy
 Allow: /terms
 Allow: /contact
+Disallow: /dashboard
+Disallow: /settings
+Disallow: /alert
 
 Sitemap: https://weienwong.online/sitemap.xml

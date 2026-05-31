@@ -1,43 +1,19 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom";
-import { useEffect } from "react";
 import AdSenseUnit from "./AdSenseUnit.jsx";
 import MobileNav from "./MobileNav.jsx";
-import { isAdSenseContentRoute } from "../lib/adsense.js";
-import { guideBySlug } from "../content/guides.js";
-
-const PAGE_TITLES = {
-  "/": "Home | SportBet Odds Comparator",
-  "/about": "About | SportBet Odds Comparator",
-  "/how-it-works": "How It Works | SportBet Odds Comparator",
-  "/guides": "Guides | SportBet Odds Comparator",
-  "/privacy": "Privacy Policy | SportBet Odds Comparator",
-  "/terms": "Terms of Use | SportBet Odds Comparator",
-  "/contact": "Contact | SportBet Odds Comparator",
-  "/dashboard": "Odds Dashboard | SportBet Odds Comparator",
-  "/settings": "Settings | SportBet Odds Comparator",
-  "/alert": "Alerts | SportBet Odds Comparator"
-};
-
-function titleForPath(pathname) {
-  if (PAGE_TITLES[pathname]) return PAGE_TITLES[pathname];
-  const guideMatch = pathname.match(/^\/guides\/([^/]+)$/);
-  if (guideMatch) {
-    const g = guideBySlug(guideMatch[1]);
-    if (g) return `${g.title} | SportBet Odds Comparator`;
-  }
-  return "SportBet Odds Comparator";
-}
+import EditorialBanner from "./EditorialBanner.jsx";
+import PageMeta from "./PageMeta.jsx";
+import { isContentRoute } from "../lib/siteMeta.js";
 
 export default function SiteLayout() {
   const { pathname } = useLocation();
-  const isToolRoute = !isAdSenseContentRoute(pathname);
-
-  useEffect(() => {
-    document.title = titleForPath(pathname);
-  }, [pathname]);
+  const isToolRoute = !isContentRoute(pathname);
+  const showAds = isContentRoute(pathname);
 
   return (
     <div className="layout">
+      <PageMeta />
+      <EditorialBanner />
       <header className="site-header">
         <div className="site-brand">
           <NavLink to="/" end className="site-logo-link" aria-label="Home">
@@ -48,7 +24,7 @@ export default function SiteLayout() {
               SportBet Odds Comparator
             </NavLink>
             <p className="site-tagline muted small">
-              Sports odds research and comparison methodology
+              Independent sports market education &amp; research guides
             </p>
           </div>
         </div>
@@ -57,15 +33,10 @@ export default function SiteLayout() {
             Home
           </NavLink>
           <NavLink to="/guides">Guides</NavLink>
+          <NavLink to="/glossary">Glossary</NavLink>
           <NavLink to="/how-it-works">How it works</NavLink>
           <NavLink to="/about">About</NavLink>
-          <NavLink to="/dashboard">Odds dashboard</NavLink>
-          {isToolRoute ? (
-            <>
-              <NavLink to="/settings">Settings</NavLink>
-              <NavLink to="/alert">Alerts</NavLink>
-            </>
-          ) : null}
+          <NavLink to="/faq">FAQ</NavLink>
           <NavLink to="/contact">Contact</NavLink>
         </nav>
         <MobileNav />
@@ -73,8 +44,9 @@ export default function SiteLayout() {
 
       {isToolRoute ? (
         <p className="tool-banner small">
-          Application tools below are for data monitoring. Display advertisements appear only on
-          informational content pages.
+          <strong>Research tools.</strong> This area is for data monitoring only—no display ads.
+          For educational content, visit <NavLink to="/guides">Guides</NavLink> or{" "}
+          <NavLink to="/">Home</NavLink>.
         </p>
       ) : null}
 
@@ -82,19 +54,40 @@ export default function SiteLayout() {
         <Outlet />
       </main>
 
-      {!isToolRoute ? <AdSenseUnit className="adsense-bottom" /> : null}
+      {showAds ? <AdSenseUnit className="adsense-bottom" /> : null}
 
       <footer className="site-footer">
-        <nav className="footer-nav" aria-label="Legal">
-          <NavLink to="/guides">Guides</NavLink>
-          <NavLink to="/privacy">Privacy Policy</NavLink>
-          <NavLink to="/terms">Terms of Use</NavLink>
-          <NavLink to="/contact">Contact</NavLink>
-          <NavLink to="/dashboard">Odds dashboard</NavLink>
-        </nav>
-        <p className="muted small">
-          © {new Date().getFullYear()} SportBet Odds Comparator. For research and informational
-          purposes. This site does not accept wagers or facilitate gambling.
+        <div className="footer-sections-grid">
+        <div className="footer-section">
+          <p className="footer-heading">Content</p>
+          <nav className="footer-nav" aria-label="Content">
+            <NavLink to="/guides">Guides</NavLink>
+            <NavLink to="/glossary">Glossary</NavLink>
+            <NavLink to="/how-it-works">How it works</NavLink>
+            <NavLink to="/about">About</NavLink>
+            <NavLink to="/faq">FAQ</NavLink>
+          </nav>
+        </div>
+        <div className="footer-section">
+          <p className="footer-heading">Legal</p>
+          <nav className="footer-nav" aria-label="Legal">
+            <NavLink to="/privacy">Privacy Policy</NavLink>
+            <NavLink to="/terms">Terms of Use</NavLink>
+            <NavLink to="/contact">Contact</NavLink>
+          </nav>
+        </div>
+        <div className="footer-section">
+          <p className="footer-heading">Research tools (no ads)</p>
+          <nav className="footer-nav" aria-label="Tools">
+            <NavLink to="/dashboard">Dashboard</NavLink>
+            <NavLink to="/settings">Settings</NavLink>
+            <NavLink to="/alert">Alerts</NavLink>
+          </nav>
+        </div>
+        </div>
+        <p className="muted small footer-copy">
+          © {new Date().getFullYear()} SportBet Odds Comparator. Educational content only. Not a
+          sportsbook. Does not accept wagers.
         </p>
       </footer>
     </div>

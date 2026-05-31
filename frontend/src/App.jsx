@@ -12,6 +12,11 @@ import ResponsibleGamblingGuide from "./pages/guides/ResponsibleGamblingGuide.js
 import Privacy from "./pages/Privacy.jsx";
 import Terms from "./pages/Terms.jsx";
 import Contact from "./pages/Contact.jsx";
+import Faq from "./pages/Faq.jsx";
+import Glossary from "./pages/Glossary.jsx";
+import MoneylineSpreadsGuide from "./pages/guides/MoneylineSpreadsGuide.jsx";
+import LineMovementGuide from "./pages/guides/LineMovementGuide.jsx";
+import ResearchEthicsGuide from "./pages/guides/ResearchEthicsGuide.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Settings from "./pages/Settings.jsx";
 import Alert from "./pages/Alert.jsx";
@@ -29,6 +34,11 @@ export default function App() {
         <Route path="guides/arbitrage-research" element={<ArbitrageResearchGuide />} />
         <Route path="guides/player-props" element={<PlayerPropsGuide />} />
         <Route path="guides/responsible-gambling" element={<ResponsibleGamblingGuide />} />
+        <Route path="guides/moneyline-and-spreads" element={<MoneylineSpreadsGuide />} />
+        <Route path="guides/line-movement" element={<LineMovementGuide />} />
+        <Route path="guides/research-ethics" element={<ResearchEthicsGuide />} />
+        <Route path="faq" element={<Faq />} />
+        <Route path="glossary" element={<Glossary />} />
         <Route path="privacy" element={<Privacy />} />
         <Route path="terms" element={<Terms />} />
         <Route path="contact" element={<Contact />} />

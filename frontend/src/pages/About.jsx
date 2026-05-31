@@ -56,12 +56,18 @@ export default function About() {
         before making decisions.
       </p>
 
+      <h2>Site structure</h2>
+      <p>
+        Public reading material lives on the home page, <Link to="/guides">guides</Link>,{" "}
+        <Link to="/glossary">glossary</Link>, <Link to="/faq">FAQ</Link>, and policy pages.
+        Optional <Link to="/dashboard">research tools</Link> are linked from the footer for
+        advanced users and are excluded from search indexing.
+      </p>
+
       <h2>Advertising</h2>
       <p>
-        We may show Google AdSense advertisements on informational pages only. Application
-        screens used for alerts, configuration, or live data tables are kept free of display ads
-        to comply with program policies. See our <a href="/privacy">Privacy Policy</a> for
-        details on cookies and ad partners.
+        We may show Google AdSense on informational pages only. Tool screens have no display ads.
+        See our <a href="/privacy">Privacy Policy</a> for cookies and ad partners.
       </p>
     </ContentPage>
   );

@@ -1,20 +1,11 @@
+import { isContentRoute } from "./siteMeta.js";
+
 /** Routes where display ads are allowed (publisher content pages only). */
 export const ADSENSE_CLIENT = "ca-pub-3940185689979323";
 export const ADSENSE_SLOT = "2649405178";
 
-const CONTENT_ROUTES = new Set([
-  "/",
-  "/about",
-  "/how-it-works",
-  "/guides",
-  "/privacy",
-  "/terms",
-  "/contact"
-]);
-
 export function isAdSenseContentRoute(pathname) {
-  if (CONTENT_ROUTES.has(pathname)) return true;
-  return pathname.startsWith("/guides/");
+  return isContentRoute(pathname);
 }
 
 let scriptLoading = null;

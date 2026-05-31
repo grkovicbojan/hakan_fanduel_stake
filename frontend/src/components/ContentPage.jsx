@@ -1,6 +1,6 @@
 import AdSenseUnit from "./AdSenseUnit.jsx";
 
-export default function ContentPage({ title, children, showTopAd = true, hero }) {
+export default function ContentPage({ title, children, showTopAd = false, hero }) {
   return (
     <article className={`content-page${hero ? " content-page--with-hero" : ""}`}>
       {showTopAd ? <AdSenseUnit className="adsense-top" /> : null}
