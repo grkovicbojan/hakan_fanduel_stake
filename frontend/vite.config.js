@@ -80,6 +80,7 @@ function backendWsTarget(mode, envDir) {
 
 const proxy = (mode, envDir) => ({
   "/api": { target: backendHttpTarget(mode, envDir), changeOrigin: true },
+  "/p": { target: backendHttpTarget(mode, envDir), changeOrigin: true },
   "/setting": { target: backendHttpTarget(mode, envDir), changeOrigin: true },
   "/dashboard": { target: backendHttpTarget(mode, envDir), changeOrigin: true },
   "/alert": { target: backendHttpTarget(mode, envDir), changeOrigin: true },

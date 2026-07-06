@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../lib/api.js";
+import { handleFormEnterKeyDown } from "../lib/formEnter.js";
 import { createDashboardSocket } from "../lib/ws.js";
 
 const PAGE_SIZE = 50;
@@ -292,7 +293,7 @@ export default function Dashboard() {
         Odds{" "}
         {disableOdds10mDeadline ? "(all compared rows)" : "(last 10 minutes)"}
       </h2>
-      <div className="row dashboard-controls">
+      <div className="row dashboard-controls" data-enter-group onKeyDown={handleFormEnterKeyDown}>
         <label>Arbitrage:</label>
         <label>
           <input
@@ -388,11 +389,6 @@ export default function Dashboard() {
             setThresholdInput(event.target.value);
           }}
           onBlur={applyThresholdFromInput}
-          onKeyDown={(event) => {
-            if (event.key !== "Enter") return;
-            event.preventDefault();
-            applyThresholdFromInput();
-          }}
           title="Show rows where comparison odd > baseline odd * (1 + threshold/100)"
         />
         
@@ -404,11 +400,6 @@ export default function Dashboard() {
           value={newlyAddedMinutesInput}
           onChange={(event) => setNewlyAddedMinutesInput(event.target.value)}
           onBlur={applyNewlyAddedMinutesFromInput}
-          onKeyDown={(event) => {
-            if (event.key !== "Enter") return;
-            event.preventDefault();
-            applyNewlyAddedMinutesFromInput();
-          }}
           title="Highlight rows created in last N minutes"
         />
         <label>Text:</label>

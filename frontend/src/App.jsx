@@ -20,12 +20,17 @@ import ResearchEthicsGuide from "./pages/guides/ResearchEthicsGuide.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import Settings from "./pages/Settings.jsx";
 import Alert from "./pages/Alert.jsx";
+import ProjectAuth from "./pages/ProjectAuth.jsx";
+import ProjectInvite from "./pages/ProjectInvite.jsx";
+import { DEFAULT_PROJECT_SLUG } from "./lib/auth.jsx";
 
 export default function App() {
   return (
     <Routes>
       <Route element={<SiteLayout />}>
         <Route index element={<Home />} />
+        <Route path="p/:slug/auth" element={<ProjectAuth />} />
+        <Route path="p/:slug/invite/:token" element={<ProjectInvite />} />
         <Route path="about" element={<About />} />
         <Route path="how-it-works" element={<HowItWorks />} />
         <Route path="guides" element={<Guides />} />

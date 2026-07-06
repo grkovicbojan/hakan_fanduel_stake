@@ -9,10 +9,12 @@ import { insertAlert } from "./db/alertsRepo.js";
 import { logger } from "./lib/logger.js";
 import { TaskQueue, TaskTypes } from "./orchestrator/taskQueue.js";
 import { WorkerPool } from "./orchestrator/workerPool.js";
-import { createAlertRouter } from "./routes/alertRouter.js";
+import { initAuthSchema } from "./auth/store.js";
+import { createAuthRouter } from "./routes/auth.js";
 import { createApiRouter } from "./routes/apiRouter.js";
 import { createDashboardRouter } from "./routes/dashboardRouter.js";
 import { createSettingRouter } from "./routes/settingRouter.js";
+import { createAlertRouter } from "./routes/alertRouter.js";
 import { createWsServer } from "./ws/createWsServer.js";
 
 const app = express();
@@ -23,6 +25,7 @@ const queue = new TaskQueue();
 const workerCount = Math.max(1, env.cthreadCount);
 const workerPool = new WorkerPool({ workerCount, queue });
 
+app.use("/p/:slug", createAuthRouter());
 app.use("/api", createApiRouter({ queue }));
 app.use("/setting", createSettingRouter());
 app.use("/dashboard", createDashboardRouter());
@@ -38,6 +41,7 @@ app.use(async (error, req, res, next) => {
 
 async function start() {
   await pool.query("SELECT 1");
+  await initAuthSchema();
   logger.info("Database connected.");
 
   await workerPool.start();

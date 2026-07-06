@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../lib/api.js";
+import { handleFormEnterKeyDown } from "../lib/formEnter.js";
 
 const initialForm = {
   url: "",
@@ -209,7 +210,7 @@ export default function Settings() {
         ). Enter one or more API keys (comma or newline separated) in <strong>API keys</strong> to spread rate
         limits. Optional env fallback: <code>STAKE_ODDS_API_KEY</code>.
       </p>
-      <div className="form-grid">
+      <div className="form-grid" data-enter-group onKeyDown={handleFormEnterKeyDown}>
         <label className="row">
           <span className="muted small">Sync NBA fixtures into match list for</span>
           <select
@@ -238,7 +239,7 @@ export default function Settings() {
       </div>
 
       <h2>Website Infos</h2>
-      <div className="form-grid">
+      <div className="form-grid" data-enter-group onKeyDown={handleFormEnterKeyDown}>
         <input
           placeholder="Url"
           value={form.url}
@@ -392,7 +393,7 @@ export default function Settings() {
 
       {edit != null && editForm != null ? (
         <div className="modal-backdrop" role="presentation" onClick={() => setEdit(null)}>
-          <div className="modal-panel" role="dialog" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-panel" role="dialog" data-enter-group onKeyDown={handleFormEnterKeyDown} onClick={(e) => e.stopPropagation()}>
             <h3>Edit website</h3>
             <div className="modal-form">
               <label>

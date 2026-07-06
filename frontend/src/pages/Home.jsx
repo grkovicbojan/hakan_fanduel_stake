@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import ContentPage from "../components/ContentPage.jsx";
 import JsonLd from "../components/JsonLd.jsx";
 import { GUIDES } from "../content/guides.js";
+import { DEFAULT_PROJECT_SLUG } from "../lib/auth.jsx";
 
 const FEATURED_SLUGS = [
   "odds-formats",
@@ -32,7 +33,7 @@ export default function Home() {
       />
       <ContentPage
         title="Sports market research and odds education"
-        showTopAd={false}
+        showTopAd
         hero={{
           image: "/images/feature-education.svg",
           imageAlt: "Educational guides on sports market research",
@@ -102,6 +103,13 @@ export default function Home() {
           <li>Sell picks, parlays, or guaranteed-profit systems</li>
           <li>Promote sign-ups at gambling operators for commission</li>
         </ul>
+
+        <h2>Get started with your team</h2>
+        <p>
+          Create a free project workspace at{" "}
+          <Link to={`/p/${DEFAULT_PROJECT_SLUG}/auth`}>/p/{DEFAULT_PROJECT_SLUG}/auth</Link> to invite
+          collaborators and use the optional research tools.
+        </p>
 
         <h2>Optional research tools</h2>
         <p>

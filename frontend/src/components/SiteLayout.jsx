@@ -1,9 +1,11 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import AdSenseUnit from "./AdSenseUnit.jsx";
 import MobileNav from "./MobileNav.jsx";
+import NavDashboardDropdown from "./NavDashboardDropdown.jsx";
 import EditorialBanner from "./EditorialBanner.jsx";
 import PageMeta from "./PageMeta.jsx";
 import { isContentRoute } from "../lib/siteMeta.js";
+import { DEFAULT_PROJECT_SLUG } from "../lib/auth.jsx";
 
 export default function SiteLayout() {
   const { pathname } = useLocation();
@@ -38,6 +40,10 @@ export default function SiteLayout() {
           <NavLink to="/about">About</NavLink>
           <NavLink to="/faq">FAQ</NavLink>
           <NavLink to="/contact">Contact</NavLink>
+          <NavDashboardDropdown />
+          <NavLink to={`/p/${DEFAULT_PROJECT_SLUG}/auth`} className="nav-account">
+            Account
+          </NavLink>
         </nav>
         <MobileNav />
       </header>

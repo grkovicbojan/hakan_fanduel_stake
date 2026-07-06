@@ -33,5 +33,9 @@ export const env = {
   /** Directory for `app-*.log` and `html/` dumps (default: backend/logs). */
   logDir: process.env.LOG_DIR?.trim()
     ? path.resolve(process.env.LOG_DIR)
-    : path.resolve(__dirname, "../../logs")
+    : path.resolve(__dirname, "../../logs"),
+  jwtSecret: process.env.JWT_SECRET || "change-me-in-production-fanduel",
+  jwtExpireDays: toInt(process.env.JWT_EXPIRE_DAYS, 7),
+  appBaseUrl: (process.env.APP_BASE_URL || "https://weienwong.online").replace(/\/$/, ""),
+  defaultProjectSlug: process.env.DEFAULT_PROJECT_SLUG || "sportbet",
 };

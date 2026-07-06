@@ -1,11 +1,9 @@
 import { useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
-import { isContentRoute } from "../lib/siteMeta.js";
+import { NavLink } from "react-router-dom";
+import { DASHBOARD_NAV_ITEMS } from "../lib/dashboardNav.js";
 
 export default function MobileNav() {
   const [open, setOpen] = useState(false);
-  const { pathname } = useLocation();
-  const isToolRoute = !isContentRoute(pathname);
 
   const close = () => setOpen(false);
 
@@ -43,24 +41,12 @@ export default function MobileNav() {
           <NavLink to="/contact" onClick={close}>
             Contact
           </NavLink>
-          {isToolRoute ? (
-            <>
-              <span className="mobile-nav-divider">Research tools</span>
-              <NavLink to="/dashboard" onClick={close}>
-                Dashboard
-              </NavLink>
-              <NavLink to="/settings" onClick={close}>
-                Settings
-              </NavLink>
-              <NavLink to="/alert" onClick={close}>
-                Alerts
-              </NavLink>
-            </>
-          ) : (
-            <NavLink to="/dashboard" onClick={close} className="mobile-nav-tools-link">
-              Research tools
+          <span className="mobile-nav-divider">Dashboard</span>
+          {DASHBOARD_NAV_ITEMS.map((item) => (
+            <NavLink key={item.to} to={item.to} onClick={close} className="mobile-nav-submenu-link">
+              {item.label}
             </NavLink>
-          )}
+          ))}
         </nav>
       ) : null}
     </div>
