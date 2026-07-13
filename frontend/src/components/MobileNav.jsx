@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { DASHBOARD_NAV_ITEMS } from "../lib/dashboardNav.js";
+import { DEFAULT_PROJECT_SLUG } from "../lib/auth.jsx";
 
 export default function MobileNav() {
   const [open, setOpen] = useState(false);
@@ -47,6 +48,10 @@ export default function MobileNav() {
               {item.label}
             </NavLink>
           ))}
+          <span className="mobile-nav-divider">Account</span>
+          <NavLink to={`/p/${DEFAULT_PROJECT_SLUG}/auth`} onClick={close} className="mobile-nav-submenu-link">
+            Sign in / Register
+          </NavLink>
         </nav>
       ) : null}
     </div>

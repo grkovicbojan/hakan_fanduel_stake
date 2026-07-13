@@ -880,7 +880,7 @@ tbody tr:hover td {
 }
 
 tbody tr:nth-child(even) td {
-  background: #fafbfc;
+  background: var(--bg-muted);
 }
 
 tbody tr:nth-child(even):hover td {
