@@ -5,6 +5,7 @@ import NavDashboardDropdown from "./NavDashboardDropdown.jsx";
 import EditorialBanner from "./EditorialBanner.jsx";
 import PageMeta from "./PageMeta.jsx";
 import { isContentRoute } from "../lib/siteMeta.js";
+import ThemeToggle from "./ThemeToggle.jsx";
 import { DEFAULT_PROJECT_SLUG } from "../lib/auth.jsx";
 
 export default function SiteLayout() {
@@ -45,7 +46,10 @@ export default function SiteLayout() {
             Account
           </NavLink>
         </nav>
-        <MobileNav />
+        <div className="header-utilities">
+          <ThemeToggle />
+          <MobileNav />
+        </div>
       </header>
 
       {isToolRoute ? (
