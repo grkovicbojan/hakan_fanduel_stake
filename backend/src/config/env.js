@@ -35,7 +35,14 @@ export const env = {
     ? path.resolve(process.env.LOG_DIR)
     : path.resolve(__dirname, "../../logs"),
   jwtSecret: process.env.JWT_SECRET || "change-me-in-production-fanduel",
+  authJwtSecret: process.env.AUTH_JWT_SECRET || process.env.JWT_SECRET || "change-me-in-production-fanduel",
+  authCookieName: process.env.AUTH_COOKIE_NAME || "ww_access_token",
+  hubAuthUrl: (process.env.HUB_AUTH_URL || "https://weienwong.online").replace(/\/$/, ""),
   jwtExpireDays: toInt(process.env.JWT_EXPIRE_DAYS, 7),
-  appBaseUrl: (process.env.APP_BASE_URL || "https://weienwong.online").replace(/\/$/, ""),
+  appBaseUrl: (process.env.APP_BASE_URL || "https://sport.weienwong.online").replace(/\/$/, ""),
   defaultProjectSlug: process.env.DEFAULT_PROJECT_SLUG || "sportbet",
+  corsOrigins: (process.env.CORS_ORIGINS || "https://sport.weienwong.online,http://localhost:5173")
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean),
 };

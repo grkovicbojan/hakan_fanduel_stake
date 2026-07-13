@@ -1,26 +1,16 @@
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 const AuthContext = createContext(null);
-const TOKEN_PREFIX = "sportbet_token_";
+const HUB_AUTH_URL = "https://weienwong.online";
 
 function apiOrigin() {
   return import.meta.env.VITE_API_ORIGIN?.replace(/\/$/, "") || "";
 }
 
 export function AuthProvider({ slug, children }) {
-  const storageKey = `${TOKEN_PREFIX}${slug}`;
-  const [token, setTokenState] = useState(() => localStorage.getItem(storageKey) || "");
   const [user, setUser] = useState(null);
+  const [booting, setBooting] = useState(true);
   const apiBase = `${apiOrigin()}/p/${slug}`;
-
-  const setToken = useCallback(
-    (value) => {
-      if (value) localStorage.setItem(storageKey, value);
-      else localStorage.removeItem(storageKey);
-      setTokenState(value || "");
-    },
-    [storageKey]
-  );
 
   const authFetch = useCallback(
     async (path, options = {}) => {
@@ -30,10 +20,13 @@ export function AuthProvider({ slug, children }) {
         options.body = JSON.stringify(options.json);
         delete options.json;
       }
-      if (token) headers.Authorization = `Bearer ${token}`;
       let res;
       try {
-        res = await fetch(`${apiBase}${path}`, { ...options, headers });
+        res = await fetch(`${apiBase}${path}`, {
+          ...options,
+          headers,
+          credentials: "include",
+        });
       } catch {
         throw new Error(
           apiOrigin()
@@ -42,66 +35,69 @@ export function AuthProvider({ slug, children }) {
         );
       }
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.message || data.detail || res.statusText);
+      if (!res.ok) {
+        const isSessionProbe = path === "/auth/me";
+        if (data.redirect && !isSessionProbe) {
+          window.location.href = data.redirect.includes("return_to=")
+            ? data.redirect
+            : `${data.redirect}${data.redirect.includes("?") ? "&" : "?"}return_to=${encodeURIComponent(window.location.href)}`;
+          throw new Error("Redirecting to hub sign in…");
+        }
+        throw new Error(data.message || data.detail || res.statusText);
+      }
       return data;
     },
-    [apiBase, token]
+    [apiBase]
   );
-
-  const login = useCallback(
-    async (email, password) => {
-      const data = await authFetch("/auth/login", { method: "POST", json: { email, password } });
-      setToken(data.token);
-      setUser(data.user);
-      return data.user;
-    },
-    [authFetch, setToken]
-  );
-
-  const register = useCallback(
-    async (email, password) => {
-      const data = await authFetch("/auth/register", {
-        method: "POST",
-        json: { email, password },
-      });
-      setToken(data.token);
-      setUser(data.user);
-      return data.user;
-    },
-    [authFetch, setToken]
-  );
-
-  const logout = useCallback(() => {
-    setToken("");
-    setUser(null);
-  }, [setToken]);
 
   const refreshUser = useCallback(async () => {
-    if (!token) return null;
     const data = await authFetch("/auth/me");
     setUser(data);
     return data;
-  }, [authFetch, token]);
+  }, [authFetch]);
+
+  const logout = useCallback(async () => {
+    try {
+      await fetch(`${HUB_AUTH_URL}/api/identity/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+    } catch (_) {
+      /* ignore */
+    }
+    setUser(null);
+  }, []);
 
   const sendInvite = useCallback(
     async (email) => authFetch("/invites", { method: "POST", json: { email } }),
     [authFetch]
   );
 
+  useEffect(() => {
+    refreshUser()
+      .catch(() => setUser(null))
+      .finally(() => setBooting(false));
+  }, [refreshUser]);
+
+  const hubLoginUrl = `${HUB_AUTH_URL}/login?return_to=${encodeURIComponent(window.location.href)}`;
+  const hubRegisterUrl = `${HUB_AUTH_URL}/register?return_to=${encodeURIComponent(window.location.href)}`;
+
   const value = useMemo(
     () => ({
       slug,
-      token,
       user,
-      login,
-      register,
+      setUser,
       logout,
       refreshUser,
       sendInvite,
       authFetch,
-      isAuthenticated: Boolean(token),
+      hubLoginUrl,
+      hubRegisterUrl,
+      hubAuthUrl: HUB_AUTH_URL,
+      booting,
+      isAuthenticated: Boolean(user),
     }),
-    [slug, token, user, login, register, logout, refreshUser, sendInvite, authFetch]
+    [slug, user, logout, refreshUser, sendInvite, authFetch, hubLoginUrl, hubRegisterUrl, booting]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

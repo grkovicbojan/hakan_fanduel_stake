@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import ContentPage from "../components/ContentPage.jsx";
 import { AuthProvider, useAuth } from "../lib/auth.jsx";
@@ -6,35 +6,10 @@ import { handleFormEnterKeyDown } from "../lib/formEnter.js";
 
 function AuthForm() {
   const { slug } = useParams();
-  const { token, user, login, register, logout, refreshUser, sendInvite } = useAuth();
-  const [mode, setMode] = useState("login");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const { user, logout, refreshUser, sendInvite, hubLoginUrl, hubRegisterUrl, booting } = useAuth();
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteLink, setInviteLink] = useState("");
   const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(Boolean(token));
-
-  useEffect(() => {
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-    refreshUser()
-      .catch(() => logout())
-      .finally(() => setLoading(false));
-  }, [token, refreshUser, logout]);
-
-  async function handleAuth(event) {
-    event.preventDefault();
-    setMessage("");
-    try {
-      if (mode === "login") await login(email, password);
-      else await register(email, password);
-    } catch (error) {
-      setMessage(error.message);
-    }
-  }
 
   async function handleInvite(event) {
     event.preventDefault();
@@ -47,8 +22,12 @@ function AuthForm() {
     }
   }
 
-  if (loading) {
-    return <ContentPage title="Account"><p>Loading…</p></ContentPage>;
+  if (booting) {
+    return (
+      <ContentPage title="Account">
+        <p>Loading…</p>
+      </ContentPage>
+    );
   }
 
   if (user) {
@@ -58,19 +37,36 @@ function AuthForm() {
           Signed in as <strong>{user.email}</strong> on project <code>/p/{slug}/</code>.
         </p>
         <p className="muted">
-          Invites accepted: {user.accepted_invites_sent ?? 0}. Share research tools with teammates via invite links.
+          Invites accepted: {user.accepted_invites_sent ?? 0}. Share research tools with teammates via
+          invite links.
         </p>
-        <form onSubmit={handleInvite} onKeyDown={handleFormEnterKeyDown} className="stack-form" style={{ maxWidth: 420 }}>
+        <form
+          onSubmit={handleInvite}
+          onKeyDown={handleFormEnterKeyDown}
+          className="stack-form"
+          style={{ maxWidth: 420 }}
+        >
           <label>
             Invite teammate by email
-            <input type="email" value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} required />
+            <input
+              type="email"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              required
+            />
           </label>
-          <button type="submit" className="btn btn-primary">Send invite</button>
+          <button type="submit" className="btn btn-primary">
+            Send invite
+          </button>
         </form>
         {inviteLink ? <p className="small muted">Share: {inviteLink}</p> : null}
         <p>
-          <Link to="/dashboard" className="btn btn-secondary">Open dashboard</Link>{" "}
-          <button type="button" className="btn btn-secondary" onClick={logout}>Logout</button>
+          <Link to="/dashboard" className="btn btn-secondary">
+            Open dashboard
+          </Link>{" "}
+          <button type="button" className="btn btn-secondary" onClick={() => logout()}>
+            Logout
+          </button>
         </p>
         {message ? <p className="message error">{message}</p> : null}
       </ContentPage>
@@ -78,26 +74,18 @@ function AuthForm() {
   }
 
   return (
-    <ContentPage title={mode === "login" ? "Sign in" : "Create account"} showTopAd={false}>
+    <ContentPage title="Sign in" showTopAd={false}>
       <p className="lead">
-        Access research tools for <strong>{slug}</strong>.
+        Use your Weien Wong hub account for <strong>{slug}</strong>.
       </p>
-      <div className="auth-tabs">
-        <button type="button" className={`btn ${mode === "login" ? "btn-primary" : "btn-secondary"}`} onClick={() => setMode("login")}>Login</button>
-        <button type="button" className={`btn ${mode === "register" ? "btn-primary" : "btn-secondary"}`} onClick={() => setMode("register")}>Register</button>
-      </div>
-      <form onSubmit={handleAuth} onKeyDown={handleFormEnterKeyDown} className="stack-form" style={{ maxWidth: 420 }}>
-        <label>
-          Email
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-        </label>
-        <label>
-          Password
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={8} required />
-        </label>
-        <button type="submit" className="btn btn-primary">{mode === "login" ? "Login" : "Register"}</button>
-      </form>
-      {message ? <p className="message error">{message}</p> : null}
+      <p style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+        <a className="btn btn-primary" href={hubLoginUrl}>
+          Sign in with Weien Wong
+        </a>
+        <a className="btn btn-secondary" href={hubRegisterUrl}>
+          Create hub account
+        </a>
+      </p>
       <p className="small muted">
         <Link to="/">← Back to home</Link>
       </p>

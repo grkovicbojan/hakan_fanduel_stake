@@ -2,15 +2,14 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import ContentPage from "../components/ContentPage.jsx";
 import { AuthProvider, useAuth } from "../lib/auth.jsx";
-import { handleFormEnterKeyDown } from "../lib/formEnter.js";
 
 function InviteInner() {
   const { slug, token } = useParams();
-  const { setToken, setUser, authFetch } = useAuth();
+  const { user, setUser, authFetch, hubLoginUrl, booting } = useAuth();
   const navigate = useNavigate();
-  const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     authFetch(`/invites/${token}`)
@@ -18,33 +17,60 @@ function InviteInner() {
       .catch((e) => setMessage(e.message));
   }, [authFetch, token]);
 
-  async function handleAccept(event) {
-    event.preventDefault();
+  async function handleAccept() {
+    setBusy(true);
+    setMessage("");
     try {
       const data = await authFetch(`/invites/${token}/accept`, {
         method: "POST",
-        json: { password },
+        json: {},
       });
-      setToken(data.token);
       setUser(data.user);
       navigate(`/p/${slug}/auth`);
     } catch (error) {
       setMessage(error.message);
+    } finally {
+      setBusy(false);
     }
+  }
+
+  if (booting) {
+    return (
+      <ContentPage title="Accept invitation" showTopAd={false}>
+        <p>Loading…</p>
+      </ContentPage>
+    );
   }
 
   return (
     <ContentPage title="Accept invitation" showTopAd={false}>
-      <p>Join project <strong>{slug}</strong> as <strong>{email}</strong>.</p>
-      <form onSubmit={handleAccept} onKeyDown={handleFormEnterKeyDown} className="stack-form" style={{ maxWidth: 420 }}>
-        <label>
-          Password
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={8} required />
-        </label>
-        <button type="submit" className="btn btn-primary">Accept invite</button>
-      </form>
+      <p>
+        Join project <strong>{slug}</strong>
+        {email ? (
+          <>
+            {" "}
+            as <strong>{email}</strong>
+          </>
+        ) : null}
+        .
+      </p>
+      {!user ? (
+        <p>
+          <a className="btn btn-primary" href={hubLoginUrl}>
+            Sign in with Weien Wong
+          </a>
+        </p>
+      ) : (
+        <p>
+          <button type="button" className="btn btn-primary" disabled={busy} onClick={handleAccept}>
+            {busy ? "Accepting…" : "Accept invite"}
+          </button>
+        </p>
+      )}
       {message ? <p className="message error">{message}</p> : null}
-      <p className="small muted"><Link to={`/p/${slug}/auth`}>Back to login</Link></p>
+      <p className="small muted">
+        <Link to={`/p/${slug}/auth`}>Back to account</Link>
+      </p>
     </ContentPage>
   );
 }

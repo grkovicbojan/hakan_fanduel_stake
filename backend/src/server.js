@@ -18,7 +18,12 @@ import { createAlertRouter } from "./routes/alertRouter.js";
 import { createWsServer } from "./ws/createWsServer.js";
 
 const app = express();
-app.use(cors());
+app.use(
+  cors({
+    origin: env.corsOrigins.length === 1 ? env.corsOrigins[0] : env.corsOrigins,
+    credentials: true,
+  })
+);
 app.use(express.json({ limit: "20mb" }));
 
 const queue = new TaskQueue();
