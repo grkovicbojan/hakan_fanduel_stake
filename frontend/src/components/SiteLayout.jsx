@@ -47,6 +47,13 @@ export default function SiteLayout() {
           </NavLink>
         </nav>
         <div className="header-utilities">
+          <a
+            className="btn btn-secondary"
+            href="https://weienwong.online/"
+            title="Return to Weien Wong hub"
+          >
+            ← Hub
+          </a>
           <ThemeToggle />
           <MobileNav />
         </div>

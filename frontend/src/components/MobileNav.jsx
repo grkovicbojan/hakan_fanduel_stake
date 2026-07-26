@@ -52,6 +52,14 @@ export default function MobileNav() {
           <NavLink to={`/p/${DEFAULT_PROJECT_SLUG}/auth`} onClick={close} className="mobile-nav-submenu-link">
             Sign in / Register
           </NavLink>
+          <a
+            href="https://weienwong.online/"
+            onClick={close}
+            className="mobile-nav-submenu-link"
+            title="Return to Weien Wong hub"
+          >
+            ← Weien Wong Hub
+          </a>
         </nav>
       ) : null}
     </div>
