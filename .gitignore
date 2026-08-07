@@ -7,3 +7,6 @@ coverage/
 backend/data/
 backend/logs/
 frontend/.vite/
+
+# Generated from .env by scripts/sync-extension-config.mjs — carries EXTENSION_API_KEY.
+extension/config.js

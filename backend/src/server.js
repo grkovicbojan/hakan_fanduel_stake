@@ -1,6 +1,6 @@
 import cors from "cors";
 import express from "express";
-import { env } from "./config/env.js";
+import { env, validateEnv } from "./config/env.js";
 import { pool } from "./db/pool.js";
 import { getPendingMatchIds } from "./db/matchRepo.js";
 import { getMatchWebsiteInfosByWebsite } from "./db/matchWebsiteRepo.js";
@@ -10,12 +10,14 @@ import { logger } from "./lib/logger.js";
 import { TaskQueue, TaskTypes } from "./orchestrator/taskQueue.js";
 import { WorkerPool } from "./orchestrator/workerPool.js";
 import { initAuthSchema } from "./auth/store.js";
-import { createAuthRouter } from "./routes/auth.js";
+import { createAuthRouter, requireAuth } from "./routes/auth.js";
 import { createApiRouter } from "./routes/apiRouter.js";
 import { createDashboardRouter } from "./routes/dashboardRouter.js";
 import { createSettingRouter } from "./routes/settingRouter.js";
 import { createAlertRouter } from "./routes/alertRouter.js";
 import { createWsServer } from "./ws/createWsServer.js";
+
+validateEnv();
 
 const app = express();
 app.use(
@@ -31,10 +33,13 @@ const workerCount = Math.max(1, env.cthreadCount);
 const workerPool = new WorkerPool({ workerCount, queue });
 
 app.use("/p/:slug", createAuthRouter());
+// /api/scrape carries its own extension-key guard (see createApiRouter); the
+// operator surfaces below are hub-authenticated. /setting in particular returns
+// each site's api_keys, so it must never be reachable anonymously.
 app.use("/api", createApiRouter({ queue }));
-app.use("/setting", createSettingRouter());
-app.use("/dashboard", createDashboardRouter());
-app.use("/alert", createAlertRouter());
+app.use("/setting", requireAuth, createSettingRouter());
+app.use("/dashboard", requireAuth, createDashboardRouter());
+app.use("/alert", requireAuth, createAlertRouter());
 
 app.use(async (error, req, res, next) => {
   void req;

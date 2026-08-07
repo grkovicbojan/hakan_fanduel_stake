@@ -1,4 +1,5 @@
 import express from "express";
+import { requireExtensionKey } from "./auth.js";
 import { TaskTypes } from "../orchestrator/taskQueue.js";
 import { upsertScrapedInfo } from "../db/scrapedRepo.js";
 import { findWebsiteByUrl, findWebsiteByUrlAny, ScrapeTypes } from "../db/websiteRepo.js";
@@ -12,7 +13,7 @@ export function createApiRouter({ queue }) {
     res.json({ data: "ok" });
   });
 
-  router.post("/scrape", async (req, res, next) => {
+  router.post("/scrape", requireExtensionKey, async (req, res, next) => {
     try {
       const { type, url, data, timestamp } = req.body;
       if (!type || !url || !data || !timestamp) {

@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import { Router } from "express";
 import { env } from "../config/env.js";
 import {
@@ -167,6 +168,30 @@ export function requireAuth(req, res, next) {
       });
     }
   })();
+}
+
+/**
+ * Guards the scrape ingest endpoint, which the Chrome extension posts to.
+ *
+ * The extension has no user session, so it presents a shared secret instead.
+ * Without this, anyone could inject fabricated odds into the compare pipeline
+ * and drive false alerts.
+ */
+export function requireExtensionKey(req, res, next) {
+  const expected = env.extensionApiKey;
+  if (!expected) {
+    return res.status(503).json({
+      message: "Scrape ingest is not configured (set EXTENSION_API_KEY)."
+    });
+  }
+  const presented = String(req.get("x-extension-key") || "");
+  // Compare over fixed-length digests so length/content do not leak via timing.
+  const a = crypto.createHash("sha256").update(presented).digest();
+  const b = crypto.createHash("sha256").update(expected).digest();
+  if (!crypto.timingSafeEqual(a, b)) {
+    return res.status(401).json({ message: "Invalid extension key" });
+  }
+  next();
 }
 
 export async function requireDownloadUnlock(req, res, next) {

@@ -34,6 +34,8 @@ export const env = {
   logDir: process.env.LOG_DIR?.trim()
     ? path.resolve(process.env.LOG_DIR)
     : path.resolve(__dirname, "../../logs"),
+  /** Shared secret the Chrome extension presents on /api/scrape (X-Extension-Key). */
+  extensionApiKey: process.env.EXTENSION_API_KEY || "",
   jwtSecret: process.env.JWT_SECRET || "change-me-in-production-fanduel",
   authJwtSecret: process.env.AUTH_JWT_SECRET || process.env.JWT_SECRET || "change-me-in-production-fanduel",
   authCookieName: process.env.AUTH_COOKIE_NAME || "ww_access_token",
@@ -41,8 +43,46 @@ export const env = {
   jwtExpireDays: toInt(process.env.JWT_EXPIRE_DAYS, 7),
   appBaseUrl: (process.env.APP_BASE_URL || "https://sport.weienwong.online").replace(/\/$/, ""),
   defaultProjectSlug: process.env.DEFAULT_PROJECT_SLUG || "sportbet",
+  extensionApiKeyConfigured: Boolean(process.env.EXTENSION_API_KEY),
   corsOrigins: (process.env.CORS_ORIGINS || "https://sport.weienwong.online,http://localhost:5173")
     .split(",")
     .map((part) => part.trim())
     .filter(Boolean),
 };
+
+// Values shipped in the README/.env.example. Booting with any of these means the
+// signing key is public knowledge, so startup fails rather than serving with it.
+const INSECURE_SECRETS = new Set([
+  "",
+  "change-me-in-production",
+  "change-me-in-production-binance",
+  "change-me-in-production-fanduel",
+  "change-this-session-secret"
+]);
+
+// Long enough that an offline attack on the HS256 signature is not worthwhile.
+const MIN_SECRET_LENGTH = 32;
+
+export function validateEnv() {
+  if (INSECURE_SECRETS.has(env.authJwtSecret)) {
+    throw new Error(
+      "AUTH_JWT_SECRET is unset or still a placeholder. Set it in .env to the " +
+        "same value the hub uses, otherwise anyone can forge a session."
+    );
+  }
+  if (INSECURE_SECRETS.has(env.jwtSecret)) {
+    throw new Error("JWT_SECRET is unset or still a placeholder. Set it in .env.");
+  }
+
+  for (const [name, value] of [
+    ["AUTH_JWT_SECRET", env.authJwtSecret],
+    ["JWT_SECRET", env.jwtSecret]
+  ]) {
+    if (value.length < MIN_SECRET_LENGTH) {
+      console.warn(
+        `warning: ${name} is only ${value.length} characters; ${MIN_SECRET_LENGTH}+ ` +
+          "recommended so the signing key cannot be recovered by offline brute force."
+      );
+    }
+  }
+}

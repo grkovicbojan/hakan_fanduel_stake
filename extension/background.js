@@ -1,4 +1,4 @@
-import { API_BASE } from "./config.js";
+import { API_BASE, EXT_CONFIG } from "./config.js";
 
 const SCHEDULER_ALARM = "schedulerTick";
 const TICK_MS = 1000;
@@ -782,7 +782,10 @@ async function postScrape(type, url, html) {
   try {
     const response = await fetch(requestUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "X-Extension-Key": EXT_CONFIG.apiKey || ""
+      },
       body: JSON.stringify({
         type,
         url,

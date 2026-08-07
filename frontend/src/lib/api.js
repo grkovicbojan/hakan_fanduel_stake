@@ -34,6 +34,14 @@ function absoluteBase() {
 
 async function parseJson(response) {
   if (!response.ok) {
+    if (response.status === 401) {
+      // Backend answers with { message, redirect } pointing at the hub sign-in.
+      const body = await response.json().catch(() => null);
+      if (body?.redirect && typeof window !== "undefined") {
+        window.location.href = body.redirect;
+      }
+      throw new Error(body?.message || "Authentication required");
+    }
     throw new Error(`Request failed: ${response.status}`);
   }
   return response.json();
@@ -44,38 +52,48 @@ function url(path) {
   return b ? `${b}${path}` : path;
 }
 
+/**
+ * Every operator endpoint below is hub-authenticated, so the shared
+ * `ww_access_token` cookie has to ride along — including cross-origin when
+ * `VITE_API_ORIGIN` points at the API subdomain, since the cookie is scoped to
+ * `.weienwong.online`.
+ */
+function apiFetch(path, options = {}) {
+  return fetch(url(path), { credentials: "include", ...options });
+}
+
 export const api = {
   getDashboard: ({ threshold = 0 } = {}) =>
-    fetch(`${url("/dashboard")}?threshold=${encodeURIComponent(Math.max(0, Number(threshold) || 0))}`).then(
+    apiFetch(`/dashboard?threshold=${encodeURIComponent(Math.max(0, Number(threshold) || 0))}`).then(
       parseJson
     ),
-  getDashboardWebsites: () => fetch(url("/dashboard/websites")).then(parseJson),
+  getDashboardWebsites: () => apiFetch("/dashboard/websites").then(parseJson),
   getLatestScrapedByUrl: (u) =>
-    fetch(`${url("/setting/scraped")}?url=${encodeURIComponent(u)}`).then(parseJson),
+    apiFetch(`/setting/scraped?url=${encodeURIComponent(u)}`).then(parseJson),
   getWebsiteMatchesByUrl: (u) =>
-    fetch(`${url("/setting/matches")}?url=${encodeURIComponent(u)}`).then(parseJson),
-  getMatchWebsitesOverview: () => fetch(url("/setting/match-websites")).then(parseJson),
+    apiFetch(`/setting/matches?url=${encodeURIComponent(u)}`).then(parseJson),
+  getMatchWebsitesOverview: () => apiFetch("/setting/match-websites").then(parseJson),
   getOddsByMatchUrl: (u) =>
-    fetch(`${url("/setting/odds")}?url=${encodeURIComponent(u)}`).then(parseJson),
-  getSettings: () => fetch(url("/setting")).then(parseJson),
+    apiFetch(`/setting/odds?url=${encodeURIComponent(u)}`).then(parseJson),
+  getSettings: () => apiFetch("/setting").then(parseJson),
   createSetting: (payload) =>
-    fetch(url("/setting"), {
+    apiFetch("/setting", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     }).then(parseJson),
   updateSetting: (id, payload) =>
-    fetch(url(`/setting/${id}`), {
+    apiFetch(`/setting/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
     }).then(parseJson),
   deleteSetting: (id) =>
-    fetch(url(`/setting/${id}`), {
+    apiFetch(`/setting/${id}`, {
       method: "DELETE"
     }),
   getAlerts: ({ page = 1, pageSize = 50 } = {}) =>
-    fetch(`${url("/alert")}?page=${page}&pageSize=${pageSize}`).then(parseJson),
+    apiFetch(`/alert?page=${page}&pageSize=${pageSize}`).then(parseJson),
   /** When not using Vite proxy, call backend directly (e.g. quick scripts). */
   absoluteBaseUrl: () => absoluteBase()
 };
