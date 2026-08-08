@@ -49,7 +49,7 @@ export const PAGE_META = {
     description: "Definitions of common sports market and odds terminology for researchers."
   },
   "/privacy": { title: "Privacy Policy", description: "How we collect and use data, including cookies and AdSense." },
-  "/terms": { title: "Terms of Use", description: "Terms for using weienwong.online and our educational content." },
+  "/terms": { title: "Terms of Use", description: "Terms for using sport.weienwong.online and our educational content." },
   "/contact": { title: "Contact", description: "Contact SportBet Odds Comparator for content and privacy inquiries." },
   "/dashboard": {
     title: "Research Tools",

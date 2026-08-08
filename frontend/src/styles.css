@@ -503,6 +503,22 @@ textarea:focus-visible {
   text-underline-offset: 3px;
 }
 
+/* Ecosystem cross-links span the full footer width below the column grid. */
+.footer-ecosystem {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border, rgba(128, 128, 128, 0.25));
+}
+
+.footer-nav-wide {
+  gap: 8px 18px;
+}
+
+.footer-nav-wide a {
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
 .footer-copy {
   margin: 24px 0 0;
   padding-top: 20px;

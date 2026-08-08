@@ -5,6 +5,7 @@ import NavDashboardDropdown from "./NavDashboardDropdown.jsx";
 import EditorialBanner from "./EditorialBanner.jsx";
 import PageMeta from "./PageMeta.jsx";
 import { isContentRoute } from "../lib/siteMeta.js";
+import { SIBLING_SITES } from "../content/ecosystem.js";
 import ThemeToggle from "./ThemeToggle.jsx";
 import { DEFAULT_PROJECT_SLUG } from "../lib/auth.jsx";
 
@@ -101,6 +102,16 @@ export default function SiteLayout() {
             <NavLink to="/alert">Alerts</NavLink>
           </nav>
         </div>
+        </div>
+        <div className="footer-section footer-ecosystem">
+          <p className="footer-heading">More from the Weien Wong network</p>
+          <nav className="footer-nav footer-nav-wide" aria-label="Weien Wong ecosystem">
+            {SIBLING_SITES.map((site) => (
+              <a key={site.id} href={site.url} title={site.blurb}>
+                {site.anchor}
+              </a>
+            ))}
+          </nav>
         </div>
         <p className="muted small footer-copy">
           © {new Date().getFullYear()} SportBet Odds Comparator. Educational content only. Not a

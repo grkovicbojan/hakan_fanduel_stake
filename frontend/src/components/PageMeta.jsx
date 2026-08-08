@@ -4,6 +4,17 @@ import { guideBySlug } from "../content/guides.js";
 import { metaForPath } from "../lib/siteMeta.js";
 
 const SITE_NAME = "SportBet Odds Comparator";
+const SITE_URL = "https://sport.weienwong.online";
+
+function upsertMeta(selector, attr, name, content) {
+  let el = document.querySelector(selector);
+  if (!el) {
+    el = document.createElement("meta");
+    el.setAttribute(attr, name);
+    document.head.appendChild(el);
+  }
+  el.setAttribute("content", content);
+}
 
 export default function PageMeta() {
   const { pathname } = useLocation();
@@ -40,8 +51,26 @@ export default function PageMeta() {
     }
     robots.setAttribute(
       "content",
-      base.noindex ? "noindex, nofollow" : "index, follow"
+      base.noindex ? "noindex, nofollow" : "index, follow, max-image-preview:large"
     );
+
+    // Canonical must track the active route — otherwise every page reports as a
+    // duplicate of whatever URL was baked into index.html.
+    const canonicalUrl = `${SITE_URL}${pathname === "/" ? "/" : pathname.replace(/\/$/, "")}`;
+    let canonical = document.querySelector('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement("link");
+      canonical.setAttribute("rel", "canonical");
+      document.head.appendChild(canonical);
+    }
+    canonical.setAttribute("href", canonicalUrl);
+
+    const fullTitle = `${title} | ${SITE_NAME}`;
+    upsertMeta('meta[property="og:title"]', "property", "og:title", fullTitle);
+    upsertMeta('meta[property="og:description"]', "property", "og:description", description);
+    upsertMeta('meta[property="og:url"]', "property", "og:url", canonicalUrl);
+    upsertMeta('meta[name="twitter:title"]', "name", "twitter:title", fullTitle);
+    upsertMeta('meta[name="twitter:description"]', "name", "twitter:description", description);
   }, [pathname]);
 
   return null;
