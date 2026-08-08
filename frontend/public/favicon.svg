@@ -1,5 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect width="32" height="32" rx="7" fill="#0ea5e9"/>
-  <path d="M6 22 L12 16 L18 19 L26 10" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="26" cy="10" r="2" fill="#fef08a"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="SportBet Odds Comparator">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#238636"/>
+      <stop offset="50%" stop-color="#388bfd"/>
+      <stop offset="100%" stop-color="#8957e5"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="#0d1117"/>
+  <circle cx="256" cy="200" r="48" fill="url(#g)" opacity="0.9"/>
+  <circle cx="160" cy="320" r="36" fill="url(#g)" opacity="0.7"/>
+  <circle cx="352" cy="320" r="36" fill="url(#g)" opacity="0.7"/>
+  <line x1="256" y1="248" x2="160" y2="284" stroke="url(#g)" stroke-width="8" stroke-linecap="round"/>
+  <line x1="256" y1="248" x2="352" y2="284" stroke="url(#g)" stroke-width="8" stroke-linecap="round"/>
+  <line x1="196" y1="320" x2="316" y2="320" stroke="url(#g)" stroke-width="8" stroke-linecap="round"/>
 </svg>
