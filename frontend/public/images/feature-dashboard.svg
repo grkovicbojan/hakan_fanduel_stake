@@ -1,9 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 200" role="img" aria-hidden="true">
-  <rect width="320" height="200" fill="#f0fdf4" rx="12"/>
-  <rect x="30" y="25" width="260" height="150" rx="8" fill="#fff" stroke="#bbf7d0" stroke-width="2"/>
-  <polyline points="50,140 90,110 130,120 170,70 210,90 250,50" fill="none" stroke="#16a34a" stroke-width="3" stroke-linecap="round"/>
-  <circle cx="90" cy="110" r="5" fill="#16a34a"/>
-  <circle cx="170" cy="70" r="5" fill="#16a34a"/>
-  <circle cx="250" cy="50" r="5" fill="#16a34a"/>
-  <rect x="50" y="40" width="60" height="20" rx="4" fill="#dcfce7"/>
+  <rect x="24" y="18" width="272" height="164" rx="12" fill="#22c55e" fill-opacity="0.09" stroke="#22c55e" stroke-opacity="0.42" stroke-width="2"/>
+  <g stroke="#94a3b8" stroke-opacity="0.32" stroke-width="1.5">
+    <line x1="46" y1="150" x2="274" y2="150"/>
+    <line x1="46" y1="110" x2="274" y2="110"/>
+    <line x1="46" y1="70" x2="274" y2="70"/>
+  </g>
+  <polyline points="52,140 92,110 132,120 172,72 212,92 258,52" fill="none" stroke="#22c55e" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <g fill="#22c55e">
+    <circle cx="92" cy="110" r="5"/>
+    <circle cx="172" cy="72" r="5"/>
+    <circle cx="258" cy="52" r="5"/>
+  </g>
+  <rect x="52" y="36" width="60" height="18" rx="5" fill="#22c55e" fill-opacity="0.28"/>
 </svg>

@@ -35,6 +35,11 @@
   --editorial-bg: linear-gradient(90deg, #fffbeb 0%, #fef3c7 100%);
   --editorial-text: #92400e;
   --editorial-link: #b45309;
+  --hero-grad: linear-gradient(135deg, #f0f9ff 0%, #ecfdf5 55%, #f8fafc 100%);
+  --status-ok-bg: #dcfce7;
+  --status-bad-bg: #fee2e2;
+  --error-bg: #fef2f2;
+  --error-border: #fecaca;
 }
 
 [data-theme="night"] {
@@ -64,6 +69,11 @@
   --editorial-bg: linear-gradient(90deg, #1e293b, #334155);
   --editorial-text: #cbd5e1;
   --editorial-link: #93c5fd;
+  --hero-grad: linear-gradient(135deg, #1c2b40 0%, #17273a 55%, #14202f 100%);
+  --status-ok-bg: rgba(34, 197, 94, 0.16);
+  --status-bad-bg: rgba(248, 113, 113, 0.16);
+  --error-bg: rgba(248, 113, 113, 0.12);
+  --error-border: rgba(248, 113, 113, 0.35);
 }
 
 *,
@@ -169,7 +179,9 @@ textarea:focus-visible {
   display: flex;
   align-items: center;
   gap: 12px;
-  min-width: 0;
+  /* Without a floor the nav's intrinsic width wins the grid and squeezes this
+     column down to the logo, leaving the title to wrap one word per line. */
+  min-width: min(100%, 15rem);
 }
 
 .site-logo-link {
@@ -194,6 +206,7 @@ textarea:focus-visible {
 
 .site-brand-text {
   min-width: 0;
+  flex: 1 1 auto;
 }
 
 .site-title-link {
@@ -204,6 +217,9 @@ textarea:focus-visible {
   letter-spacing: -0.02em;
   display: block;
   line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .site-title-link:hover {
@@ -215,6 +231,9 @@ textarea:focus-visible {
   max-width: 28rem;
   line-height: 1.4;
   display: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .site-nav {
@@ -507,7 +526,7 @@ textarea:focus-visible {
 .footer-ecosystem {
   margin-top: 24px;
   padding-top: 20px;
-  border-top: 1px solid var(--border, rgba(128, 128, 128, 0.25));
+  border-top: 1px solid var(--border);
 }
 
 .footer-nav-wide {
@@ -516,7 +535,6 @@ textarea:focus-visible {
 
 .footer-nav-wide a {
   font-weight: 400;
-  color: var(--text-muted);
 }
 
 .footer-copy {
@@ -534,7 +552,7 @@ textarea:focus-visible {
   align-items: center;
   margin: 0 0 clamp(24px, 4vw, 36px);
   padding: clamp(20px, 4vw, 32px);
-  background: linear-gradient(135deg, var(--bg-accent-soft) 0%, #ecfdf5 55%, #f8fafc 100%);
+  background: var(--hero-grad);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
@@ -625,12 +643,12 @@ textarea:focus-visible {
   line-height: 1.25;
 }
 
-.content-page--with-hero h1 {
-  display: none;
-}
+/* ContentPage renders the h1 inside .page-hero__text OR standalone, never both,
+   so hiding it here left hero pages with no visible title and no h1 at all. */
 
 .content-prose {
   max-width: var(--content-width);
+  margin-inline: auto;
   line-height: 1.7;
   font-size: 1rem;
 }
@@ -837,8 +855,18 @@ textarea:focus-visible {
 .adsense-wrap {
   margin: 20px 0 0;
   padding: 16px 0;
-  min-height: 90px;
   border-top: 1px dashed var(--border);
+}
+
+/* AdSense reports no-fill by stamping data-ad-status="unfilled" on the <ins>,
+   but leaves its own inline height (~280px) behind. Left alone that renders as
+   a dead gap above the hero and below the article, so collapse the slot. */
+.adsense-wrap:has(ins.adsbygoogle[data-ad-status="unfilled"]) {
+  display: none;
+}
+
+ins.adsbygoogle[data-ad-status="unfilled"] {
+  display: none !important;
 }
 
 /* —— Tool pages —— */
@@ -1125,8 +1153,8 @@ button.linklike {
 
 .message.error {
   color: var(--danger);
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: var(--error-bg);
+  border: 1px solid var(--error-border);
 }
 
 .scrape-preview {
@@ -1236,12 +1264,12 @@ button.website-pill .pill-label {
 
 .website-status[data-ok="true"] {
   color: var(--success);
-  background: #dcfce7;
+  background: var(--status-ok-bg);
 }
 
 .website-status[data-ok="false"] {
   color: var(--danger);
-  background: #fee2e2;
+  background: var(--status-bad-bg);
 }
 
 .website-type {
@@ -1310,21 +1338,33 @@ span.status-dot {
 }
 
 @media (min-width: 900px) {
+  /* The nav's nine links need ~757px on their own, which is more than the
+     72rem page can spare beside the brand and utilities. Give it a dedicated
+     row instead of letting it crush the brand into a one-word-per-line stack. */
   .site-header {
-    grid-template-columns: 1fr auto auto;
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 10px;
   }
 
   .site-brand {
     grid-column: 1;
+    grid-row: 1;
+  }
+
+  .header-utilities {
+    grid-column: 2;
+    grid-row: 1;
   }
 
   .site-nav {
     display: flex;
-    grid-column: 2;
-  }
-
-  .header-utilities {
-    grid-column: 3;
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-content: flex-start;
+    gap: 2px;
+    margin: 0 -6px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
   }
 
   .mobile-nav {
