@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../lib/api.js";
+import { SortHeader, TableFilter, useTableControls } from "../components/TableControls.jsx";
 
 const PAGE_SIZE = 50;
 
@@ -21,19 +22,33 @@ export default function Alert() {
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const safePage = Math.min(page, pageCount);
 
+  const table = useTableControls(rows, {
+    columns: {
+      timestamp: (row) => new Date(row.timestamp).getTime(),
+      alert: (row) => JSON.stringify(row.alert_data ?? ""),
+    },
+    search: (row) =>
+      `${new Date(row.timestamp).toLocaleString()} ${JSON.stringify(row.alert_data ?? "")}`,
+  });
+
   return (
     <section className="tool-page">
       <h2>Alerts</h2>
+      <TableFilter controls={table} placeholder="Filter alerts on this page…" />
       <div className="table-wrap">
       <table>
         <thead>
           <tr>
-            <th>Timestamp</th>
-            <th>Alert Data</th>
+            <SortHeader controls={table} col="timestamp">
+              Timestamp
+            </SortHeader>
+            <SortHeader controls={table} col="alert">
+              Alert Data
+            </SortHeader>
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => (
+          {table.rows.map((row) => (
             <tr key={row.id}>
               <td>{new Date(row.timestamp).toLocaleString()}</td>
               <td>

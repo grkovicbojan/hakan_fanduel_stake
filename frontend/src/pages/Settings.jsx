@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../lib/api.js";
+import { SortHeader, TableFilter, useTableControls } from "../components/TableControls.jsx";
 import { handleFormEnterKeyDown } from "../lib/formEnter.js";
 
 const initialForm = {
@@ -57,6 +58,68 @@ function formatRemainingToStart(startTimeIso, nowMs) {
   const m = Math.floor((totalSec % 3600) / 60);
   const s = totalSec % 60;
   return `${h}h ${String(m).padStart(2, "0")}m ${String(s).padStart(2, "0")}s`;
+}
+
+/** One website's match table, with its own sort and filter state. */
+function MatchGroupTable({ website, items, groupIdx, nowMs, onOpenDetail }) {
+  const table = useTableControls(items, {
+    columns: {
+      name: (item) => item.name ?? "",
+      url: (item) => item.url ?? "",
+      oddCount: (item) => Number(item.extracted_odd_count ?? 0),
+      remaining: (item) => {
+        const target = new Date(item.start_time).getTime();
+        return Number.isFinite(target) ? target - nowMs : NaN;
+      },
+      lastScraped: (item) =>
+        Number.isFinite(item.lastScrapedAgoSeconds) ? item.lastScrapedAgoSeconds : NaN,
+      status: (item) => item.status ?? "",
+    },
+    search: (item) => `${item.name ?? ""} ${item.url ?? ""} ${item.status ?? ""}`,
+  });
+
+  return (
+    <div className={`match-website-group ${groupIdx % 2 === 1 ? "match-website-group--alt" : ""}`}>
+      <div className="match-website-group__title">{website}</div>
+      <TableFilter controls={table} placeholder={`Filter ${website} matches…`} />
+      <div className="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <SortHeader controls={table} col="name">Name</SortHeader>
+              <SortHeader controls={table} col="url">Detailed Match Url</SortHeader>
+              <SortHeader controls={table} col="oddCount">ExtractedOddCount</SortHeader>
+              <SortHeader controls={table} col="remaining">Remaining Time To Start</SortHeader>
+              <SortHeader controls={table} col="lastScraped">LastScraped</SortHeader>
+              <SortHeader controls={table} col="status">Status</SortHeader>
+            </tr>
+          </thead>
+          <tbody>
+            {table.rows.map((item) => {
+              const ago = Number.isFinite(item.lastScrapedAgoSeconds) ? item.lastScrapedAgoSeconds : null;
+              const ok = item.status === "ok";
+              return (
+                <tr key={`${item.website}|${item.url}`}>
+                  <td>{item.name}</td>
+                  <td>
+                    <button type="button" className="linklike" onClick={() => onOpenDetail(item.url)}>
+                      {item.url}
+                    </button>
+                  </td>
+                  <td>{item.extracted_odd_count ?? 0}</td>
+                  <td>{formatRemainingToStart(item.start_time, nowMs)}</td>
+                  <td>{ago === null ? "—" : `${ago}s ago`}</td>
+                  <td>
+                    <span className={ok ? "status-dot status-dot--ok" : "status-dot status-dot--stale"} />
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
 }
 
 export default function Settings() {
@@ -147,6 +210,34 @@ export default function Settings() {
   }, []);
 
   const matchGroups = useMemo(() => groupMatchRows(matchOverviewRows), [matchOverviewRows]);
+
+  const websitesTable = useTableControls(rows, {
+    columns: {
+      status: (row) => row.status ?? "",
+      lastScraped: (row) =>
+        Number.isFinite(row.lastScrapedAgoSeconds) ? row.lastScrapedAgoSeconds : NaN,
+      url: (row) => row.url ?? "",
+      type: (row) => row.type ?? "",
+      scrapeInterval: (row) => Number(row.scrape_interval),
+      refreshInterval: (row) => Number(row.refresh_interval),
+      comparison: (row) => row.comparison_website_list ?? "",
+      scrapeType: (row) => row.scrape_type ?? "",
+      apiKeys: (row) => apiKeysConfiguredCount(row.api_keys),
+    },
+    search: (row) =>
+      `${row.url ?? ""} ${row.type ?? ""} ${row.scrape_type ?? ""} ${
+        row.comparison_website_list ?? ""
+      } ${row.status ?? ""}`,
+  });
+
+  const oddRowsTable = useTableControls(oddRows, {
+    columns: {
+      category: (row) => row.category ?? "",
+      value: (row) => Number(row.value),
+      timestamp: (row) => (row.timestamp ? new Date(row.timestamp).getTime() : NaN),
+    },
+    search: (row) => `${row.category ?? ""} ${row.value ?? ""}`,
+  });
 
   const create = async () => {
     await api.createSetting(form);
@@ -282,24 +373,25 @@ export default function Settings() {
           Add
         </button>
       </div>
+      <TableFilter controls={websitesTable} placeholder="Filter websites…" />
       <div className="table-wrap">
       <table>
         <thead>
           <tr>
-            <th>Status</th>
-            <th>LastScraped</th>
-            <th>Url</th>
-            <th>Type</th>
-            <th>ScrapeInterval</th>
-            <th>RefreshInterval</th>
-            <th>Comparison List</th>
-            <th>Scrape type</th>
-            <th>API keys</th>
+            <SortHeader controls={websitesTable} col="status">Status</SortHeader>
+            <SortHeader controls={websitesTable} col="lastScraped">LastScraped</SortHeader>
+            <SortHeader controls={websitesTable} col="url">Url</SortHeader>
+            <SortHeader controls={websitesTable} col="type">Type</SortHeader>
+            <SortHeader controls={websitesTable} col="scrapeInterval">ScrapeInterval</SortHeader>
+            <SortHeader controls={websitesTable} col="refreshInterval">RefreshInterval</SortHeader>
+            <SortHeader controls={websitesTable} col="comparison">Comparison List</SortHeader>
+            <SortHeader controls={websitesTable} col="scrapeType">Scrape type</SortHeader>
+            <SortHeader controls={websitesTable} col="apiKeys">API keys</SortHeader>
             <th>Action</th>
           </tr>
         </thead>
         <tbody>
-          {rows.map((row) => {
+          {websitesTable.rows.map((row) => {
             const mainAgo = Number.isFinite(row.lastScrapedAgoSeconds) ? row.lastScrapedAgoSeconds : null;
             return (
               <tr key={row.id}>
@@ -342,52 +434,14 @@ export default function Settings() {
         <p>No rows in match_website_infos yet.</p>
       ) : (
         matchGroups.map(([website, items], groupIdx) => (
-          <div
+          <MatchGroupTable
             key={website}
-            className={`match-website-group ${groupIdx % 2 === 1 ? "match-website-group--alt" : ""}`}
-          >
-            <div className="match-website-group__title">{website}</div>
-            <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Detailed Match Url</th>
-                  <th>ExtractedOddCount</th>
-                  <th>Remaining Time To Start</th>
-                  <th>LastScraped</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((item) => {
-                  const ago = Number.isFinite(item.lastScrapedAgoSeconds) ? item.lastScrapedAgoSeconds : null;
-                  const ok = item.status === "ok";
-                  return (
-                    <tr key={`${item.website}|${item.url}`}>
-                      <td>{item.name}</td>
-                      <td>
-                        <button
-                          type="button"
-                          className="linklike"
-                          onClick={() => setDetailMatchUrl(item.url)}
-                        >
-                          {item.url}
-                        </button>
-                      </td>
-                      <td>{item.extracted_odd_count ?? 0}</td>
-                      <td>{formatRemainingToStart(item.start_time, nowMs)}</td>
-                      <td>{ago === null ? "—" : `${ago}s ago`}</td>
-                      <td>
-                        <span className={ok ? "status-dot status-dot--ok" : "status-dot status-dot--stale"} />
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            </div>
-          </div>
+            website={website}
+            items={items}
+            groupIdx={groupIdx}
+            nowMs={nowMs}
+            onOpenDetail={setDetailMatchUrl}
+          />
         ))
       )}
 
@@ -483,17 +537,19 @@ export default function Settings() {
             {oddLoading ? (
               <p>Loading…</p>
             ) : oddRows.length > 0 ? (
+              <>
+              <TableFilter controls={oddRowsTable} placeholder="Filter odds…" />
               <div className="table-wrap">
               <table>
                 <thead>
                   <tr>
-                    <th>Category</th>
-                    <th>Value</th>
-                    <th>Timestamp</th>
+                    <SortHeader controls={oddRowsTable} col="category">Category</SortHeader>
+                    <SortHeader controls={oddRowsTable} col="value">Value</SortHeader>
+                    <SortHeader controls={oddRowsTable} col="timestamp">Timestamp</SortHeader>
                   </tr>
                 </thead>
                 <tbody>
-                  {oddRows.map((item, index) => (
+                  {oddRowsTable.rows.map((item, index) => (
                     <tr key={`${item.url}|${item.category}|${index}`}>
                       <td>{item.category}</td>
                       <td>{item.value}</td>
@@ -503,6 +559,7 @@ export default function Settings() {
                 </tbody>
               </table>
               </div>
+              </>
             ) : (
               <p>No rows in odd_infos for this match URL yet.</p>
             )}

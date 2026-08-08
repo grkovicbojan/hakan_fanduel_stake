@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../lib/api.js";
+import { SortHeader } from "../components/TableControls.jsx";
 import { handleFormEnterKeyDown } from "../lib/formEnter.js";
 import { createDashboardSocket } from "../lib/ws.js";
 
@@ -104,6 +105,9 @@ export default function Dashboard() {
   const [threshold, setThreshold] = useState(0);
   const [filterEnabled, setFilterEnabled] = useState(true);
   const [filter, setFilter] = useState("");
+  // Header-click sort. When set it takes precedence over the checkbox sorts
+  // below, so a click always does what the column says.
+  const [headerSortState, setHeaderSortState] = useState(null);
   const [sortByArbitrageEnabled, setSortByArbitrageEnabled] = useState(true);
   const [sortByNewlyAddedEnabled, setSortByNewlyAddedEnabled] = useState(true);
   const [sortByRemainingEnabled, setSortByRemainingEnabled] = useState(true);
@@ -197,7 +201,55 @@ export default function Dashboard() {
     );
   }, [filterEnabled, filter, currentOddsData]);
 
+  const headerSort = {
+    sort: headerSortState,
+    toggleSort: (key) =>
+      setHeaderSortState((current) =>
+        current && current.key === key
+          ? current.dir === "asc"
+            ? { key, dir: "desc" }
+            : null // third click clears, restoring the checkbox sorts
+          : { key, dir: "asc" }
+      ),
+  };
+
+  const headerSortValue = useMemo(
+    () => ({
+      status: (row) => Number(row.arbitrage),
+      name: (row) => row.name ?? "",
+      category: (row) => row.category ?? "",
+      arbitrage: (row) => Number(row.arbitrage),
+      remaining: (row) => {
+        const t = new Date(row.start_time).getTime();
+        return Number.isFinite(t) ? t - nowMs : Number.POSITIVE_INFINITY;
+      },
+      baselineValue: (row) => Number(row.baseline_value),
+      baselineTime: (row) => new Date(row.baseline_timestamp).getTime(),
+      comparisonValue: (row) => Number(row.comparison_value),
+      comparisonTime: (row) => new Date(row.comparison_timestamp).getTime(),
+      createdAt: (row) => new Date(row.timestamp).getTime(),
+    }),
+    [nowMs]
+  );
+
   const sorted = useMemo(() => {
+    if (headerSortState && headerSortValue[headerSortState.key]) {
+      const get = headerSortValue[headerSortState.key];
+      const sign = headerSortState.dir === "desc" ? -1 : 1;
+      return [...filtered].sort((a, b) => {
+        const va = get(a);
+        const vb = get(b);
+        if (typeof va === "number" && typeof vb === "number") {
+          const na = !Number.isFinite(va);
+          const nb = !Number.isFinite(vb);
+          if (na && nb) return 0;
+          if (na) return 1;
+          if (nb) return -1;
+          return sign * (va - vb);
+        }
+        return sign * String(va).localeCompare(String(vb), undefined, { numeric: true });
+      });
+    }
     if (!sortByArbitrageEnabled && !sortByNewlyAddedEnabled && !sortByRemainingEnabled) return filtered;
     const list = [...filtered];
     const dirArb = arbitrageOrder === "asc" ? 1 : -1;
@@ -234,6 +286,8 @@ export default function Dashboard() {
     return list;
   }, [
     filtered,
+    headerSortState,
+    headerSortValue,
     sortByArbitrageEnabled,
     sortByNewlyAddedEnabled,
     sortByRemainingEnabled,
@@ -418,18 +472,18 @@ export default function Dashboard() {
       <table>
         <thead>
           <tr>
-            <th>Status</th>
-            <th>Name</th>
+            <SortHeader controls={headerSort} col="status">Status</SortHeader>
+            <SortHeader controls={headerSort} col="name">Name</SortHeader>
             <th>BaselineMatchUrl</th>
             <th>ComparisonMatchUrl</th>
-            <th>Category</th>
-            <th>Arbitrage(%)</th>
-            <th>Remaining To Start</th>
-            <th>BaselineValue</th>
-            <th>ComparisonValue</th>
-            <th>BaselineTime</th>
-            <th>ComparisonTime</th>
-            <th>CreatedAt</th>
+            <SortHeader controls={headerSort} col="category">Category</SortHeader>
+            <SortHeader controls={headerSort} col="arbitrage">Arbitrage(%)</SortHeader>
+            <SortHeader controls={headerSort} col="remaining">Remaining To Start</SortHeader>
+            <SortHeader controls={headerSort} col="baselineValue">BaselineValue</SortHeader>
+            <SortHeader controls={headerSort} col="baselineTime">BaselineTime</SortHeader>
+            <SortHeader controls={headerSort} col="comparisonValue">ComparisonValue</SortHeader>
+            <SortHeader controls={headerSort} col="comparisonTime">ComparisonTime</SortHeader>
+            <SortHeader controls={headerSort} col="createdAt">CreatedAt</SortHeader>
           </tr>
         </thead>
         <tbody>
@@ -447,7 +501,8 @@ export default function Dashboard() {
                 <td><a className="table-link" href={row.comparison_match_url} target="_blank" rel="noopener noreferrer">Compared Match Url</a></td>
                 <td>{row.category}</td>
                 <td>{Number(row.arbitrage).toFixed(4)}</td>
-                <td>{formatRemainingToStart(row.start_time, nowMs)}</td>                <td>{Number(row.baseline_value).toFixed(2)}</td>
+                <td>{formatRemainingToStart(row.start_time, nowMs)}</td>
+                <td>{Number(row.baseline_value).toFixed(2)}</td>
                 <td>{new Date(row.baseline_timestamp).toLocaleString()}</td>
                 <td>{Number(row.comparison_value).toFixed(2)}</td>
                 <td>{new Date(row.comparison_timestamp).toLocaleString()}</td>

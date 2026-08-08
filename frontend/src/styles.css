@@ -1507,3 +1507,66 @@ span.status-dot {
     grid-template-columns: repeat(3, 1fr);
   }
 }
+
+/* —— Table sort + filter controls (see components/TableControls.jsx) —— */
+.ww-table-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 10px;
+}
+
+.ww-table-filter {
+  flex: 1 1 12rem;
+  min-width: 0;
+  max-width: 22rem;
+  font: inherit;
+  font-size: 0.875rem;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text);
+}
+
+.ww-table-count,
+.ww-table-note {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+th.ww-sortable {
+  padding: 0;
+}
+
+th.ww-sortable .ww-th-btn {
+  all: unset;
+  box-sizing: border-box;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  width: 100%;
+  padding: 10px 12px; /* keep the cell padding the th gave up */
+  font: inherit;
+  color: inherit;
+}
+
+th.ww-sortable .ww-th-btn:focus-visible {
+  outline: 2px solid var(--primary-light);
+  outline-offset: -2px;
+}
+
+th.ww-sortable .ww-arrow {
+  opacity: 0.35;
+  font-size: 0.85em;
+  line-height: 1;
+}
+
+th.ww-sortable[aria-sort="ascending"] .ww-arrow,
+th.ww-sortable[aria-sort="descending"] .ww-arrow {
+  opacity: 1;
+  color: var(--primary-dark);
+}
