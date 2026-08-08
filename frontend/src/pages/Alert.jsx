@@ -29,6 +29,8 @@ export default function Alert() {
     },
     search: (row) =>
       `${new Date(row.timestamp).toLocaleString()} ${JSON.stringify(row.alert_data ?? "")}`,
+    // The page already pages server-side below; a second pager would fight it.
+    paged: false,
   });
 
   return (

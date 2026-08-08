@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../lib/api.js";
-import { SortHeader, TableFilter, useTableControls } from "../components/TableControls.jsx";
+import { SortHeader, TableFilter, TablePager, useTableControls } from "../components/TableControls.jsx";
 import { handleFormEnterKeyDown } from "../lib/formEnter.js";
 
 const initialForm = {
@@ -118,6 +118,7 @@ function MatchGroupTable({ website, items, groupIdx, nowMs, onOpenDetail }) {
           </tbody>
         </table>
       </div>
+      <TablePager controls={table} />
     </div>
   );
 }
@@ -422,6 +423,7 @@ export default function Settings() {
         </tbody>
       </table>
       </div>
+      <TablePager controls={websitesTable} />
 
       <h2>Match Info Based on Website</h2>
       <p className="muted small">
@@ -559,6 +561,7 @@ export default function Settings() {
                 </tbody>
               </table>
               </div>
+              <TablePager controls={oddRowsTable} />
               </>
             ) : (
               <p>No rows in odd_infos for this match URL yet.</p>

@@ -1570,3 +1570,56 @@ th.ww-sortable[aria-sort="descending"] .ww-arrow {
   opacity: 1;
   color: var(--primary-dark);
 }
+
+.ww-table-pager {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 10px 0 0;
+}
+
+.ww-page-btn {
+  font: inherit;
+  font-size: 0.8125rem;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.ww-page-btn:hover:not(:disabled) {
+  border-color: var(--border-strong);
+}
+
+.ww-page-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.ww-page-info {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.ww-page-size {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.ww-page-size select {
+  font: inherit;
+  font-size: 0.8rem;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text);
+}
