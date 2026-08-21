@@ -6,7 +6,7 @@ import {
   createIdentityToken,
   decodeIdentityToken,
   getTokenFromRequest,
-} from "/mnt/social_dataset/shared_auth/node/index.js";
+} from "../vendor/shared_auth/index.js";
 
 export function hashPassword(password) {
   return bcrypt.hashSync(password, 10);
