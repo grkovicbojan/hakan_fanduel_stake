@@ -21,7 +21,7 @@ export default function SiteLayout() {
       <header className="site-header">
         <div className="site-brand">
           <NavLink to="/" end className="site-logo-link" aria-label="Home">
-            <img src="/images/site-logo.svg" alt="" className="site-logo" width={44} height={44} />
+            <img src="/images/logo.svg" alt="" className="site-logo" width={44} height={44} />
           </NavLink>
           <div className="site-brand-text">
             <NavLink to="/" className="site-title-link">
