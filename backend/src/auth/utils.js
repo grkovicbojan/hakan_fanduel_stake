@@ -1,5 +1,4 @@
 import crypto from "crypto";
-import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { env } from "../config/env.js";
 import {
@@ -26,12 +25,16 @@ export function createToken({ userId, projectId, email }) {
   });
 }
 
+// Verify a hub identity token. Anything else throws.
+//
+// The JWT_SECRET fall-back that used to sit in the catch is gone. Nothing here
+// mints such a token any more, and it verified with no issuer and no required
+// claims -- so a token with no exp never expired. It was also reachable in a
+// worse way: authJwtSecret falls back to JWT_SECRET when AUTH_JWT_SECRET is
+// unset, and wherever that default applied the catch re-judged, under weaker
+// rules, the very token decodeIdentityToken had just rejected.
 export function decodeToken(token) {
-  try {
-    return decodeIdentityToken(token, env.authJwtSecret);
-  } catch {
-    return jwt.verify(token, env.jwtSecret);
-  }
+  return decodeIdentityToken(token, env.authJwtSecret);
 }
 
 export function generateInviteToken() {
