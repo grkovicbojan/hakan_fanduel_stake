@@ -347,7 +347,14 @@ export default function Dashboard() {
         Odds{" "}
         {disableOdds10mDeadline ? "(all compared rows)" : "(last 10 minutes)"}
       </h2>
-      <div className="row dashboard-controls" data-enter-group onKeyDown={handleFormEnterKeyDown}>
+      <div
+        className="row dashboard-controls"
+        data-enter-group
+        onKeyDown={handleFormEnterKeyDown}
+        data-tour="1"
+        data-tour-title="Set what you are watching"
+        data-tour-body="Choose the sites and the checks to run against them. Everything below reflects these as soon as you change them."
+      >
         <label>Arbitrage:</label>
         <label>
           <input
@@ -468,7 +475,12 @@ export default function Dashboard() {
         />
 
       </div>
-      <div className="table-wrap">
+      <div
+        className="table-wrap"
+        data-tour="2"
+        data-tour-title="The results"
+        data-tour-body="One row per site, with what the last check found. Open a row for the full detail behind the verdict."
+      >
       <table>
         <thead>
           <tr>
