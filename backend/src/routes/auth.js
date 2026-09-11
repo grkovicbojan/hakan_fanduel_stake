@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { rejectRevoked } from "../auth/hubSession.js";
 import { Router } from "express";
 import { env } from "../config/env.js";
 import {
@@ -107,6 +108,7 @@ export function createAuthRouter() {
       }
 
       const identity = decodeToken(token);
+      await rejectRevoked(identity);
       const user = await ensureUserFromIdentity(
         String(identity.sub),
         String(identity.email || invite.email)
@@ -145,6 +147,7 @@ export function requireAuth(req, res, next) {
       }
 
       const payload = decodeToken(token);
+      await rejectRevoked(payload);
       const project = await ensureDefaultProject(slug);
 
       if (payload.project_id && payload.project_id !== project.id) {
