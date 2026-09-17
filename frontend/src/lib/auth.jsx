@@ -43,7 +43,10 @@ export function AuthProvider({ slug, children }) {
             : `${data.redirect}${data.redirect.includes("?") ? "&" : "?"}return_to=${encodeURIComponent(window.location.href)}`;
           throw new Error("Redirecting to hub sign in…");
         }
-        throw new Error(data.message || data.detail || res.statusText);
+        const err = new Error(data.message || data.detail || res.statusText);
+        err.code = data.code;
+        err.email = data.email;
+        throw err;
       }
       return data;
     },
@@ -75,9 +78,18 @@ export function AuthProvider({ slug, children }) {
 
   useEffect(() => {
     refreshUser()
-      .catch(() => setUser(null))
+      .catch((err) => {
+        setUser(null);
+        // Signed in at the hub, but an older local account for the same
+        // address stands in the way. Not a sign-in failure: offer the one-time
+        // link step (the shared dialog from ww-auth.js, loaded in index.html)
+        // rather than the sign-in dialog, which would only loop.
+        if (err && err.code === "link_required" && window.WWAuth && window.WWAuth.link) {
+          window.WWAuth.link({ endpoint: `${apiBase}/auth/link`, email: err.email });
+        }
+      })
       .finally(() => setBooting(false));
-  }, [refreshUser]);
+  }, [refreshUser, apiBase]);
 
   const hubLoginUrl = `${HUB_AUTH_URL}/login?return_to=${encodeURIComponent(window.location.href)}`;
   const hubRegisterUrl = `${HUB_AUTH_URL}/register?return_to=${encodeURIComponent(window.location.href)}`;

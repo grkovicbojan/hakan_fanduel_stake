@@ -52,8 +52,12 @@ export async function getUserById(userId) {
   return rows[0] ?? null;
 }
 
+// The password_hash every row this service makes for a hub identity carries.
+// It is not a hash of anything: it marks the row as hub-owned.
+export const HUB_ONLY_HASH = "$2b$10$hub.identity.only.account.placeholder.hashxx";
+
 export async function ensureUserFromIdentity(userId, email) {
-  const hubOnlyHash = "$2b$10$hub.identity.only.account.placeholder.hashxx";
+  const hubOnlyHash = HUB_ONLY_HASH;
   let user = await getUserById(userId);
   if (user) return user;
   const byEmail = email ? await getUserByEmail(email) : null;
@@ -64,10 +68,16 @@ export async function ensureUserFromIdentity(userId, email) {
     // the address they sign up with, so the email in a token is not proof the
     // sender owns this account.
     if ((byEmail.password_hash || "") !== hubOnlyHash) {
+      // Not a failure to sign in -- the hub cookie is good -- but not a
+      // sign-in either, until the person proves the local account is theirs
+      // by giving its password once (POST /auth/link). The code lets the
+      // route tell the two apart and the page offer the link step.
       const error = new Error(
         "An account with this email already exists here with its own password."
       );
-      error.status = 403;
+      error.status = 401;
+      error.code = "link_required";
+      error.email = byEmail.email;
       throw error;
     }
     return byEmail;
@@ -78,6 +88,18 @@ export async function ensureUserFromIdentity(userId, email) {
     [userId, String(email || "").toLowerCase(), hubOnlyHash]
   );
   return rows[0];
+}
+
+/**
+ * Mark a pre-hub local row as hub-owned, once its password has been proven.
+ *
+ * The row keeps its id, so nothing that references it is re-pointed; only the
+ * hash changes, to the sentinel every hub-made row carries. From then on
+ * ensureUserFromIdentity adopts it by email like any other. The local password
+ * had no other use: local login here already sends people to the hub.
+ */
+export async function markUserHubOwned(userId) {
+  await pool.query("UPDATE users SET password_hash = $1 WHERE id = $2", [HUB_ONLY_HASH, userId]);
 }
 
 export async function createUser(email, passwordHash) {

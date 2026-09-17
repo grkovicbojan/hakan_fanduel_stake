@@ -11,6 +11,9 @@ import {
   ensureUserFromIdentity,
   getInviteByToken,
   getProjectBySlug,
+  getUserByEmail,
+  HUB_ONLY_HASH,
+  markUserHubOwned,
   userPayload,
 } from "../auth/store.js";
 import {
@@ -19,6 +22,7 @@ import {
   getBearerToken,
   hubLoginUrl,
   hubRegisterUrl,
+  verifyPassword,
 } from "../auth/utils.js";
 
 export function createAuthRouter() {
@@ -38,6 +42,62 @@ export function createAuthRouter() {
       message: "Sign in at the Weien Wong hub",
       redirect: hubLoginUrl(`${env.appBaseUrl}/p/${slug}/auth`),
     });
+  });
+
+  // Linking checks a password, so it is throttled like a login: five wrong
+  // guesses per address-and-email in fifteen minutes, then a lockout.
+  const LINK_WINDOW_MS = 15 * 60 * 1000;
+  const LINK_LIMIT = 5;
+  const linkFailures = new Map();
+  function linkKey(req, email) {
+    const ip = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim() || req.ip || "";
+    return `${ip}|${email}`;
+  }
+  function linkThrottled(key) {
+    const now = Date.now();
+    const q = (linkFailures.get(key) || []).filter((t) => t > now - LINK_WINDOW_MS);
+    linkFailures.set(key, q);
+    return q.length >= LINK_LIMIT;
+  }
+  function linkFailed(key) {
+    linkFailures.set(key, [...(linkFailures.get(key) || []), Date.now()]);
+  }
+
+  /**
+   * Attach the hub identity to a local account from before hub sign-in.
+   *
+   * Two credentials at once, which is what makes this safe where automatic
+   * adoption is not: the hub cookie proves the hub account, and the password
+   * proves the local one. The hub does not verify that a registrant owns their
+   * address, so either alone would let a stranger claim the row.
+   */
+  router.post("/auth/link", async (req, res) => {
+    let identity;
+    try {
+      const token = getBearerToken(req);
+      if (!token) return res.status(401).json({ message: "Sign in first, then link." });
+      identity = decodeToken(token);
+    } catch {
+      return res.status(401).json({ message: "Sign in first, then link." });
+    }
+    const email = String(identity.email || "").trim().toLowerCase();
+    const password = String((req.body && req.body.password) || "");
+    if (!password) return res.status(400).json({ message: "Password required" });
+
+    const row = email ? await getUserByEmail(email) : null;
+    if (!row || (row.password_hash || "") === HUB_ONLY_HASH) {
+      return res.status(404).json({ message: "There is no separate account here to link." });
+    }
+    const key = linkKey(req, email);
+    if (linkThrottled(key)) {
+      return res.status(429).json({ message: "Too many attempts. Try again in fifteen minutes." });
+    }
+    if (!verifyPassword(password, row.password_hash)) {
+      linkFailed(key);
+      return res.status(401).json({ message: "That password is not right." });
+    }
+    await markUserHubOwned(row.id);
+    res.json({ ok: true, email: row.email });
   });
 
   router.get("/auth/me", requireAuth, async (req, res) => {
@@ -164,7 +224,19 @@ export function requireAuth(req, res, next) {
         projectSlug: slug,
       };
       next();
-    } catch {
+    } catch (err) {
+      if (err && err.code === "link_required") {
+        // Deliberately no redirect: sending this person back to the hub would
+        // loop, since they are already signed in there. The page reads the
+        // code and offers the link step instead.
+        return res.status(401).json({
+          code: "link_required",
+          email: err.email,
+          message:
+            "An account with this email already exists here from before. " +
+            "Enter its password once to link it.",
+        });
+      }
       res.status(401).json({
         message: "Invalid or expired token",
         redirect: hubLoginUrl(`${env.appBaseUrl}/p/${slug}/auth`),
