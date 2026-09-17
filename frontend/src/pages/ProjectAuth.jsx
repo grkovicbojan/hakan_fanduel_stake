@@ -6,7 +6,7 @@ import { handleFormEnterKeyDown } from "../lib/formEnter.js";
 
 function AuthForm() {
   const { slug } = useParams();
-  const { user, logout, refreshUser, sendInvite, hubLoginUrl, hubRegisterUrl, booting } = useAuth();
+  const { user, logout, refreshUser, sendInvite, booting } = useAuth();
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteLink, setInviteLink] = useState("");
   const [message, setMessage] = useState("");
@@ -76,15 +76,20 @@ function AuthForm() {
   return (
     <ContentPage title="Sign in" showTopAd={false}>
       <p className="lead">
-        Use your Weien Wong hub account for <strong>{slug}</strong>.
+        <strong>Create your account here and it works on every weienwong.online service</strong>
+        {" "}&mdash; sign in once, use them all. Already registered on another one? Just sign in.
       </p>
+      {/* data-ww-signup / data-ww-signin are picked up by ww-auth.js (loaded in
+          index.html) through a document-level listener. The dialog posts to
+          weienwong.online itself and the page reloads signed in -- nobody is
+          sent to another site. */}
       <p style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-        <a className="btn btn-primary" href={hubLoginUrl}>
-          Sign in with Weien Wong
-        </a>
-        <a className="btn btn-secondary" href={hubRegisterUrl}>
-          Create hub account
-        </a>
+        <button type="button" className="btn btn-primary" data-ww-signup>
+          Create a free account
+        </button>
+        <button type="button" className="btn btn-secondary" data-ww-signin>
+          I already have one
+        </button>
       </p>
       <p className="small muted">
         <Link to="/">← Back to home</Link>
