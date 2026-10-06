@@ -5,7 +5,7 @@ import { AuthProvider, useAuth } from "../lib/auth.jsx";
 
 function InviteInner() {
   const { slug, token } = useParams();
-  const { user, setUser, authFetch, hubLoginUrl, booting } = useAuth();
+  const { user, setUser, authFetch, booting } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
@@ -56,9 +56,9 @@ function InviteInner() {
       </p>
       {!user ? (
         <p>
-          <a className="btn btn-primary" href={hubLoginUrl}>
-            Sign in with Weien Wong
-          </a>
+          <Link className="btn btn-primary" to={`/p/${slug}/auth`}>
+            Sign in to accept
+          </Link>
         </p>
       ) : (
         <p>

@@ -4,7 +4,6 @@ import { env } from "../config/env.js";
 import {
   createIdentityToken,
   decodeIdentityToken,
-  getTokenFromRequest,
 } from "../vendor/shared_auth/index.js";
 
 export function hashPassword(password) {
@@ -42,7 +41,21 @@ export function generateInviteToken() {
 }
 
 export function getBearerToken(req) {
-  return getTokenFromRequest(req, env.authCookieName);
+  const auth = String(req.headers?.authorization || "");
+  if (auth.startsWith("Bearer ")) {
+    const token = auth.slice(7).trim();
+    if (token && token !== "cookie") return token;
+  }
+  const cookies = {};
+  for (const part of String(req.headers?.cookie || "").split(";")) {
+    const at = part.indexOf("=");
+    if (at < 0) continue;
+    const name = part.slice(0, at).trim();
+    try { cookies[name] = decodeURIComponent(part.slice(at + 1).trim()); }
+    catch { cookies[name] = part.slice(at + 1).trim(); }
+  }
+  const token = cookies[env.authCookieName] || cookies.access_token || "";
+  return token === "cookie" ? "" : token;
 }
 
 export function hubLoginUrl(returnTo = "") {

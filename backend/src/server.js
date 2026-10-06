@@ -20,6 +20,7 @@ import { createWsServer } from "./ws/createWsServer.js";
 validateEnv();
 
 const app = express();
+app.set("trust proxy", "loopback");
 app.use(
   cors({
     origin: env.corsOrigins.length === 1 ? env.corsOrigins[0] : env.corsOrigins,

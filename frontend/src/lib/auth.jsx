@@ -1,7 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 const AuthContext = createContext(null);
-const HUB_AUTH_URL = "https://weienwong.online";
 
 function apiOrigin() {
   return import.meta.env.VITE_API_ORIGIN?.replace(/\/$/, "") || "";
@@ -9,6 +8,7 @@ function apiOrigin() {
 
 export function AuthProvider({ slug, children }) {
   const [user, setUser] = useState(null);
+  const [linkRequired, setLinkRequired] = useState(null);
   const [booting, setBooting] = useState(true);
   const apiBase = `${apiOrigin()}/p/${slug}`;
 
@@ -36,13 +36,6 @@ export function AuthProvider({ slug, children }) {
       }
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const isSessionProbe = path === "/auth/me";
-        if (data.redirect && !isSessionProbe) {
-          window.location.href = data.redirect.includes("return_to=")
-            ? data.redirect
-            : `${data.redirect}${data.redirect.includes("?") ? "&" : "?"}return_to=${encodeURIComponent(window.location.href)}`;
-          throw new Error("Redirecting to hub sign in…");
-        }
         const err = new Error(data.message || data.detail || res.statusText);
         err.code = data.code;
         err.email = data.email;
@@ -54,22 +47,52 @@ export function AuthProvider({ slug, children }) {
   );
 
   const refreshUser = useCallback(async () => {
-    const data = await authFetch("/auth/me");
-    setUser(data);
-    return data;
+    try {
+      const data = await authFetch("/auth/me");
+      setUser(data);
+      setLinkRequired(null);
+      return data;
+    } catch (error) {
+      setUser(null);
+      setLinkRequired(error.code === "link_required" ? { email: error.email } : null);
+      throw error;
+    }
   }, [authFetch]);
 
-  const logout = useCallback(async () => {
+  const signIn = useCallback(async (email, password) => {
     try {
-      await fetch(`${HUB_AUTH_URL}/api/identity/logout`, {
-        method: "POST",
-        credentials: "include",
-      });
-    } catch (_) {
-      /* ignore */
+      const data = await authFetch("/auth/login", { method: "POST", json: { email, password } });
+      setUser(data.user);
+      setLinkRequired(null);
+      return data.user;
+    } catch (error) {
+      if (error.code === "link_required") setLinkRequired({ email: error.email });
+      throw error;
     }
+  }, [authFetch]);
+
+  const signUp = useCallback(async (email, password) => {
+    try {
+      const data = await authFetch("/auth/register", { method: "POST", json: { email, password } });
+      setUser(data.user);
+      setLinkRequired(null);
+      return data.user;
+    } catch (error) {
+      if (error.code === "link_required") setLinkRequired({ email: error.email });
+      throw error;
+    }
+  }, [authFetch]);
+
+  const linkLegacyAccount = useCallback(async (password) => {
+    await authFetch("/auth/link", { method: "POST", json: { password } });
+    return refreshUser();
+  }, [authFetch, refreshUser]);
+
+  const logout = useCallback(async () => {
+    await authFetch("/auth/logout", { method: "POST" });
     setUser(null);
-  }, []);
+    setLinkRequired(null);
+  }, [authFetch]);
 
   const sendInvite = useCallback(
     async (email) => authFetch("/invites", { method: "POST", json: { email } }),
@@ -78,38 +101,27 @@ export function AuthProvider({ slug, children }) {
 
   useEffect(() => {
     refreshUser()
-      .catch((err) => {
-        setUser(null);
-        // Signed in at the hub, but an older local account for the same
-        // address stands in the way. Not a sign-in failure: offer the one-time
-        // link step (the shared dialog from ww-auth.js, loaded in index.html)
-        // rather than the sign-in dialog, which would only loop.
-        if (err && err.code === "link_required" && window.WWAuth && window.WWAuth.link) {
-          window.WWAuth.link({ endpoint: `${apiBase}/auth/link`, email: err.email });
-        }
-      })
+      .catch(() => {})
       .finally(() => setBooting(false));
-  }, [refreshUser, apiBase]);
-
-  const hubLoginUrl = `${HUB_AUTH_URL}/login?return_to=${encodeURIComponent(window.location.href)}`;
-  const hubRegisterUrl = `${HUB_AUTH_URL}/register?return_to=${encodeURIComponent(window.location.href)}`;
+  }, [refreshUser]);
 
   const value = useMemo(
     () => ({
       slug,
       user,
+      linkRequired,
       setUser,
       logout,
+      signIn,
+      signUp,
+      linkLegacyAccount,
       refreshUser,
       sendInvite,
       authFetch,
-      hubLoginUrl,
-      hubRegisterUrl,
-      hubAuthUrl: HUB_AUTH_URL,
       booting,
       isAuthenticated: Boolean(user),
     }),
-    [slug, user, logout, refreshUser, sendInvite, authFetch, hubLoginUrl, hubRegisterUrl, booting]
+    [slug, user, linkRequired, logout, signIn, signUp, linkLegacyAccount, refreshUser, sendInvite, authFetch, booting]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -6,10 +6,47 @@ import { handleFormEnterKeyDown } from "../lib/formEnter.js";
 
 function AuthForm() {
   const { slug } = useParams();
-  const { user, logout, refreshUser, sendInvite, booting } = useAuth();
+  const { user, linkRequired, logout, refreshUser, sendInvite, signIn, signUp,
+    linkLegacyAccount, booting } = useAuth();
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteLink, setInviteLink] = useState("");
   const [message, setMessage] = useState("");
+  const [mode, setMode] = useState("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmation, setConfirmation] = useState("");
+  const [legacyPassword, setLegacyPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function handleAuth(event) {
+    event.preventDefault();
+    setMessage("");
+    if (mode === "register" && password !== confirmation) {
+      setMessage("Passwords do not match.");
+      return;
+    }
+    setBusy(true);
+    try {
+      if (mode === "register") await signUp(email.trim(), password);
+      else await signIn(email.trim(), password);
+      setPassword("");
+      setConfirmation("");
+    } catch (error) {
+      setMessage(error.message || "Could not sign in.");
+    } finally { setBusy(false); }
+  }
+
+  async function handleLegacyLink(event) {
+    event.preventDefault();
+    setMessage("");
+    setBusy(true);
+    try {
+      await linkLegacyAccount(legacyPassword);
+      setLegacyPassword("");
+    } catch (error) {
+      setMessage(error.message || "Could not link the older SportBet account.");
+    } finally { setBusy(false); }
+  }
 
   async function handleInvite(event) {
     event.preventDefault();
@@ -74,26 +111,51 @@ function AuthForm() {
   }
 
   return (
-    <ContentPage title="Sign in" showTopAd={false}>
-      <p className="lead">
-        <strong>Create your account here and it works on every weienwong.online service</strong>
-        {" "}&mdash; sign in once, use them all. Already registered on another one? Just sign in.
-      </p>
-      {/* data-ww-signup / data-ww-signin are picked up by ww-auth.js (loaded in
-          index.html) through a document-level listener. The dialog posts to
-          weienwong.online itself and the page reloads signed in -- nobody is
-          sent to another site. */}
-      <p style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-        <button type="button" className="btn btn-primary" data-ww-signup>
-          Create a free account
-        </button>
-        <button type="button" className="btn btn-secondary" data-ww-signin>
-          I already have one
-        </button>
-      </p>
-      <p className="small muted">
-        <Link to="/">← Back to home</Link>
-      </p>
+    <ContentPage title="Your account" showTopAd={false}>
+      {linkRequired ? (
+        <>
+          <h2>Link your older SportBet account</h2>
+          <p className="lead">Your shared account is signed in as {linkRequired.email}. Enter the old SportBet password once to keep your existing projects and permissions.</p>
+          <form onSubmit={handleLegacyLink} className="stack-form" style={{ maxWidth: 420 }}>
+            <label>Old SportBet password
+              <input type="password" autoComplete="current-password" value={legacyPassword}
+                onChange={(event) => setLegacyPassword(event.target.value)} required disabled={busy} />
+            </label>
+            <button type="submit" className="btn btn-primary" disabled={busy}>{busy ? "Linking…" : "Link account"}</button>
+          </form>
+          <button type="button" className="btn btn-secondary" onClick={() => logout()}>Use a different account</button>
+        </>
+      ) : (
+        <>
+          <p className="lead">Create an account here and use the same email and password on every Weien Wong service. Already registered elsewhere? Sign in here.</p>
+          <form onSubmit={handleAuth} onKeyDown={handleFormEnterKeyDown} className="stack-form" style={{ maxWidth: 420 }}>
+            <label>Email
+              <input type="email" autoComplete="email" value={email}
+                onChange={(event) => setEmail(event.target.value)} required disabled={busy} />
+            </label>
+            <label>Password
+              <input type="password" autoComplete={mode === "register" ? "new-password" : "current-password"}
+                value={password} onChange={(event) => setPassword(event.target.value)}
+                minLength={mode === "register" ? 12 : undefined} required disabled={busy} />
+            </label>
+            {mode === "register" ? (
+              <label>Confirm password
+                <input type="password" autoComplete="new-password" value={confirmation}
+                  onChange={(event) => setConfirmation(event.target.value)} minLength={12} required disabled={busy} />
+              </label>
+            ) : null}
+            <button type="submit" className="btn btn-primary" disabled={busy}>
+              {busy ? "Please wait…" : mode === "register" ? "Create account" : "Sign in"}
+            </button>
+          </form>
+          <button type="button" className="btn btn-secondary" style={{ marginTop: 12 }}
+            onClick={() => { setMode(mode === "login" ? "register" : "login"); setMessage(""); setPassword(""); setConfirmation(""); }}>
+            {mode === "login" ? "Create an account" : "Already have an account? Sign in"}
+          </button>
+        </>
+      )}
+      {message ? <p className="message error" role="alert">{message}</p> : null}
+      <p className="small muted"><Link to="/">← Back to home</Link></p>
     </ContentPage>
   );
 }

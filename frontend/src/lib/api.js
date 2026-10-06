@@ -35,11 +35,7 @@ function absoluteBase() {
 async function parseJson(response) {
   if (!response.ok) {
     if (response.status === 401) {
-      // Backend answers with { message, redirect } pointing at the hub sign-in.
       const body = await response.json().catch(() => null);
-      if (body?.redirect && typeof window !== "undefined") {
-        window.location.href = body.redirect;
-      }
       throw new Error(body?.message || "Authentication required");
     }
     throw new Error(`Request failed: ${response.status}`);
@@ -53,7 +49,7 @@ function url(path) {
 }
 
 /**
- * Every operator endpoint below is hub-authenticated, so the shared
+ * Every operator endpoint below is account-authenticated, so the shared
  * `ww_access_token` cookie has to ride along — including cross-origin when
  * `VITE_API_ORIGIN` points at the API subdomain, since the cookie is scoped to
  * `.weienwong.online`.

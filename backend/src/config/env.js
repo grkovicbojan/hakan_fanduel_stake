@@ -39,6 +39,8 @@ export const env = {
   jwtSecret: process.env.JWT_SECRET || "change-me-in-production-fanduel",
   authJwtSecret: process.env.AUTH_JWT_SECRET || process.env.JWT_SECRET || "change-me-in-production-fanduel",
   authCookieName: process.env.AUTH_COOKIE_NAME || "ww_access_token",
+  hubDatabaseUrl: process.env.HUB_DATABASE_URL || "",
+  authJwtExpireDays: toInt(process.env.AUTH_JWT_EXPIRE_DAYS, 7),
   hubAuthUrl: (process.env.HUB_AUTH_URL || "https://weienwong.online").replace(/\/$/, ""),
   jwtExpireDays: toInt(process.env.JWT_EXPIRE_DAYS, 7),
   appBaseUrl: (process.env.APP_BASE_URL || "https://sport.weienwong.online").replace(/\/$/, ""),

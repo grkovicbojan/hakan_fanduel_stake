@@ -15,6 +15,14 @@ cp .env.example .env
 
 All services use this one file.
 
+Set `HUB_DATABASE_URL` to a dedicated role on the shared identity PostgreSQL
+database and use the same `AUTH_JWT_SECRET` as the other Weien Wong services.
+SportBet serves its own registration and sign-in forms. Accounts created here
+can sign in on the other services without a second registration; this does not
+require the Hub web process to be running. Existing SportBet project membership
+and invite history stay in the SportBet database, keyed to the shared identity
+after the older SportBet password has been proved once.
+
 For frontend, Vite reads root `.env` (`envDir: ".."`).  
 For extension, run config sync:
 
